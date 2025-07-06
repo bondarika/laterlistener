@@ -1,70 +1,180 @@
-# Getting Started with Create React App
+# Audio Transcriber Bot - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Веб-интерфейс для телеграм бота транскрибуции аудио, построенный на React с Material UI.
 
-## Available Scripts
+## 🚀 Возможности
 
-In the project directory, you can run:
+- 📁 **Загрузка аудиофайлов** - Поддержка различных аудиоформатов
+- 🎯 **Настройка параметров** - Выбор модели, языка, качества транскрибуции
+- 📝 **Отображение результатов** - Просмотр и редактирование транскрипции
+- 💾 **Экспорт данных** - Скачивание результатов в различных форматах
+- 🎨 **Современный UI** - Красивый интерфейс на Material UI
+- 🔐 **Бесшовная авторизация** - Интеграция с Telegram Web App
 
-### `npm start`
+## 📱 Страницы приложения
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Login (`/login`)
+- Автоматическая проверка авторизации через Telegram
+- Поддержка Telegram Web App API
+- Тестовая кнопка для быстрого доступа к дашборду
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Dashboard (`/dashboard`)
+- Статистика транскрипций (количество файлов, общая длительность, точность)
+- Список последних транскрипций с статусами
+- Быстрые действия (новая транскрипция, история)
+- Встроенные компоненты загрузки и настроек
+- Плавающая кнопка настроек
 
-### `npm test`
+### Transcript (`/transcript/:id`)
+- Детальный просмотр транскрипции
+- Редактирование текста в реальном времени
+- Копирование и скачивание результатов
+- Информация о файле и метаданных
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Share (`/share/:id`)
+- Настройки доступа к транскрипции
+- Генерация ссылок для шаринга
+- Копирование ссылки в буфер обмена
+- Скачивание оригинального файла
 
-### `npm run build`
+## 🧩 Компоненты
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Header
+- Заголовок приложения с иконками
+- Информация о проекте
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### AudioUpload
+- Загрузка аудиофайлов через drag & drop или кнопку
+- Предварительное прослушивание
+- Прогресс загрузки
+- Валидация файлов
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### TranscriptionDisplay
+- Отображение результатов транскрибуции
+- Редактирование текста
+- Копирование и скачивание
+- Информация о точности и статусе
 
-### `npm run eject`
+### Settings
+- Настройка языка транскрибуции
+- Выбор модели Whisper
+- Настройка качества
+- Дополнительные опции (пунктуация, разделение спикеров)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🛠️ Технологии
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- **React 19** - Основной фреймворк
+- **Material UI 7** - UI компоненты и иконки
+- **React Router 6** - Навигация между страницами
+- **Emotion** - CSS-in-JS решение
+- **React Hooks** - Управление состоянием
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## ⚡ Быстрый старт
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. **Установите зависимости:**
+```bash
+npm install
+```
 
-## Learn More
+2. **Запустите приложение:**
+```bash
+npm start
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+3. **Откройте браузер:**
+```
+http://localhost:3000
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+4. **Для тестирования без авторизации:**
+- Нажмите кнопку "🚀 Перейти к дашборду (тест)" на странице логина
 
-### Code Splitting
+## 📁 Структура проекта
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```
+src/
+├── components/          # Переиспользуемые компоненты
+│   ├── Header/
+│   │   └── Header.js
+│   ├── AudioUpload/
+│   │   └── AudioUpload.js
+│   ├── TranscriptionDisplay/
+│   │   └── TranscriptionDisplay.js
+│   └── Settings/
+│       └── Settings.js
+├── pages/              # Страницы приложения
+│   ├── Login.js        # Авторизация
+│   ├── Dashboard.js    # Главная панель
+│   ├── Transcript.js   # Просмотр транскрипции
+│   └── Share.js        # Шаринг
+├── App.js              # Главный компонент с роутингом
+├── App.css             # Глобальные стили
+└── index.js            # Точка входа
+```
 
-### Analyzing the Bundle Size
+## 🗺️ Роутинг
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Приложение использует React Router для навигации:
 
-### Making a Progressive Web App
+| Маршрут           | Описание                    | Компонент   |
+|-------------------|-----------------------------|-------------|
+| `/`               | Перенаправление на `/login` | `Navigate`  |
+| `/login`          | Авторизация через Telegram  | `Login`     |
+| `/dashboard`      | Главная панель управления   | `Dashboard` |
+| `/transcript/:id` | Просмотр транскрипции       | `Transcript`|
+| `/share/:id`      | Шаринг транскрипции         | `Share`     |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## ⚙️ Настройки транскрибуции
 
-### Advanced Configuration
+### Поддерживаемые языки:
+- 🇷🇺 Русский
+- 🇺🇸 English  
+- 🇪🇸 Español
+- 🇫🇷 Français
+- 🇩🇪 Deutsch
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Модели Whisper:
+- **Tiny** - Быстрая обработка
+- **Base** - Баланс скорости и качества
+- **Small** - Улучшенное качество
+- **Medium** - Высокое качество
+- **Large** - Максимальная точность
 
-### Deployment
+### Форматы вывода:
+- 📄 TXT - Текстовый файл
+- 🎬 SRT - Субтитры
+- 🌐 VTT - WebVTT
+- 📊 JSON - Структурированные данные
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Дополнительные опции:
+- 🔍 Автоопределение языка
+- ✏️ Добавление пунктуации
+- 👥 Разделение по спикерам
+- 🎯 Настройка порога уверенности
 
-### `npm run build` fails to minify
+## 🔧 Разработка
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Добавление новых компонентов:
+1. Создайте папку в `src/components/`
+2. Создайте файл компонента с именем папки
+3. Импортируйте в нужную страницу
+4. Добавьте необходимые стили в `App.css`
+
+### Добавление новых страниц:
+1. Создайте файл в `src/pages/`
+2. Добавьте маршрут в `App.js`
+3. Настройте навигацию
+
+## 🧹 Очистка проекта
+
+Удалены ненужные файлы:
+- ❌ `logo.svg` - логотип React
+- ❌ `App.test.js` - тестовый файл
+- ❌ `setupTests.js` - настройки тестов
+- ❌ `reportWebVitals.js` - метрики производительности
+- ❌ `index.css` - базовые стили
+- ❌ `manifest.json` - манифест PWA
+
+## 📄 Лицензия
+
+MIT License
