@@ -11,7 +11,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Fab
 } from '@mui/material';
@@ -23,13 +22,14 @@ import {
   PlayArrow,
   Download,
   Share,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Summarize
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import AudioUpload from '../components/AudioUpload/AudioUpload';
 import Settings from '../components/Settings/Settings';
 
-const Dashboard = () => {
+const Dashboard = ({ onPlayAudio }) => {
   const [recentTranscriptions, setRecentTranscriptions] = useState([]);
   const [stats, setStats] = useState({
     totalFiles: 0,
@@ -88,6 +88,18 @@ const Dashboard = () => {
 
   const handleViewTranscription = (id) => {
     navigate(`/transcript/${id}`);
+  };
+
+  const handlePlayAudio = (item) => {
+    // Конвертируем время из формата "15:30" в секунды
+    const timeParts = item.duration.split(':');
+    const durationInSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+    
+    onPlayAudio({
+      fileName: item.fileName,
+      duration: durationInSeconds,
+      id: item.id
+    });
   };
 
   const handleShareTranscription = (id) => {
@@ -241,23 +253,10 @@ const Dashboard = () => {
           
           <List>
             {recentTranscriptions.map((item) => (
-              <ListItem key={item.id} divider>
-                <ListItemText
-                  primary={item.fileName}
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {item.duration} • {item.timestamp}
-                      </Typography>
-                      {item.accuracy && (
-                        <Typography variant="body2" color="text.secondary">
-                          Точность: {Math.round(item.accuracy * 100)}%
-                        </Typography>
-                      )}
-                    </Box>
-                  }
-                />
-                <ListItemSecondaryAction>
+              <ListItem 
+                key={item.id} 
+                divider
+                secondaryAction={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Chip
                       label={getStatusText(item.status)}
@@ -266,7 +265,7 @@ const Dashboard = () => {
                     />
                     <IconButton
                       size="small"
-                      onClick={() => handleViewTranscription(item.id)}
+                      onClick={() => handlePlayAudio(item)}
                     >
                       <PlayArrow />
                     </IconButton>
@@ -280,7 +279,34 @@ const Dashboard = () => {
                       <Download />
                     </IconButton>
                   </Box>
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText
+                  primary={
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        cursor: 'pointer',
+                        '&:hover': { color: 'primary.main' }
+                      }}
+                      onClick={() => handleViewTranscription(item.id)}
+                    >
+                      {item.fileName}
+                    </Typography>
+                  }
+                  secondary={
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.duration} • {item.timestamp}
+                      </Typography>
+                      {item.accuracy && (
+                        <Typography variant="body2" color="text.secondary">
+                          Точность: {Math.round(item.accuracy * 100)}%
+                        </Typography>
+                      )}
+                    </Box>
+                  }
+                />
               </ListItem>
             ))}
           </List>
@@ -289,7 +315,7 @@ const Dashboard = () => {
 
       {/* Быстрые действия */}
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Button
             fullWidth
             variant="contained"
@@ -301,7 +327,8 @@ const Dashboard = () => {
             Создать новую транскрипцию
           </Button>
         </Grid>
-        <Grid item xs={12} md={6}>
+        
+        <Grid item xs={12} md={4}>
           <Button
             fullWidth
             variant="outlined"

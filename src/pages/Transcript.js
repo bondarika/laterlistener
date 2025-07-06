@@ -12,7 +12,9 @@ import {
   Paper,
   TextField,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   ArrowBack,
@@ -22,12 +24,12 @@ import {
   ContentCopy,
   Download,
   Share,
-  PlayArrow,
-  Pause
+  Summarize,
+  PlayArrow
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const Transcript = () => {
+const Transcript = ({ onPlayAudio, currentTab, onTabChange }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [transcription, setTranscription] = useState(null);
@@ -35,7 +37,8 @@ const Transcript = () => {
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState('');
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [summary, setSummary] = useState('');
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     loadTranscription();
@@ -83,15 +86,21 @@ const Transcript = () => {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(transcription.text);
+    const textToCopy = currentTab === 'transcript' ? transcription.text : summary;
+    navigator.clipboard.writeText(textToCopy);
   };
 
   const handleDownload = () => {
-    const blob = new Blob([transcription.text], { type: 'text/plain' });
+    const textToDownload = currentTab === 'transcript' ? transcription.text : summary;
+    const fileName = currentTab === 'transcript' ? 
+      `${transcription.fileName}.txt` : 
+      `${transcription.fileName}_summary.txt`;
+    
+    const blob = new Blob([textToDownload], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${transcription.fileName}.txt`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -99,6 +108,44 @@ const Transcript = () => {
   const handleShare = () => {
     navigate(`/share/${id}`);
   };
+
+  const handlePlayAudio = () => {
+    // Конвертируем время из формата "15:30" в секунды
+    const timeParts = transcription.duration.split(':');
+    const durationInSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+    
+    onPlayAudio({
+      fileName: transcription.fileName,
+      duration: durationInSeconds,
+      id: transcription.id
+    });
+  };
+
+  const handleTabChange = (event, newValue) => {
+    onTabChange(newValue);
+  };
+
+  const generateSummary = async () => {
+    if (summary) return; // Если саммари уже есть, не генерируем повторно
+    
+    setSummaryLoading(true);
+    try {
+      // Имитация генерации саммари
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setSummary('Это краткое содержание транскрипции. Основные темы обсуждения включают планирование проекта, распределение задач и установление сроков. Участники встречи договорились о следующих шагах и назначили ответственных за выполнение ключевых задач.');
+    } catch (error) {
+      console.error('Ошибка генерации саммари:', error);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  // Генерируем саммари при загрузке страницы
+  useEffect(() => {
+    if (!summary && !summaryLoading) {
+      generateSummary();
+    }
+  }, [summary, summaryLoading]);
 
   if (loading) {
     return (
@@ -164,40 +211,67 @@ const Transcript = () => {
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
+          {/* Вкладки */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs value={currentTab} onChange={handleTabChange}>
+              <Tab label="Транскрипция" value="transcript" />
+              <Tab label="Саммари" value="summary" />
+            </Tabs>
+          </Box>
+
+          {/* Заголовок и кнопки действий */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">
-              Текст транскрипции
+              {currentTab === 'transcript' ? 'Текст транскрипции' : 'Краткое содержание'}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {isEditing ? (
+              {currentTab === 'transcript' && (
+                isEditing ? (
+                  <>
+                    <Button
+                      startIcon={<Save />}
+                      onClick={handleSave}
+                      variant="contained"
+                      size="small"
+                    >
+                      Сохранить
+                    </Button>
+                    <Button
+                      startIcon={<Cancel />}
+                      onClick={handleCancel}
+                      variant="outlined"
+                      size="small"
+                    >
+                      Отмена
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      startIcon={<Edit />}
+                      onClick={handleEdit}
+                      variant="outlined"
+                      size="small"
+                    >
+                      Редактировать
+                    </Button>
+                    <IconButton onClick={handleCopy} size="small">
+                      <ContentCopy />
+                    </IconButton>
+                    <IconButton onClick={handlePlayAudio} size="small">
+                      <PlayArrow />
+                    </IconButton>
+                    <IconButton onClick={handleDownload} size="small">
+                      <Download />
+                    </IconButton>
+                    <IconButton onClick={handleShare} size="small">
+                      <Share />
+                    </IconButton>
+                  </>
+                )
+              )}
+              {currentTab === 'summary' && (
                 <>
-                  <Button
-                    startIcon={<Save />}
-                    onClick={handleSave}
-                    variant="contained"
-                    size="small"
-                  >
-                    Сохранить
-                  </Button>
-                  <Button
-                    startIcon={<Cancel />}
-                    onClick={handleCancel}
-                    variant="outlined"
-                    size="small"
-                  >
-                    Отмена
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    startIcon={<Edit />}
-                    onClick={handleEdit}
-                    variant="outlined"
-                    size="small"
-                  >
-                    Редактировать
-                  </Button>
                   <IconButton onClick={handleCopy} size="small">
                     <ContentCopy />
                   </IconButton>
@@ -214,20 +288,40 @@ const Transcript = () => {
 
           <Divider sx={{ mb: 2 }} />
 
-          {isEditing ? (
-            <TextField
-              fullWidth
-              multiline
-              rows={8}
-              value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
-              variant="outlined"
-            />
-          ) : (
+          {/* Контент вкладок */}
+          {currentTab === 'transcript' && (
+            isEditing ? (
+              <TextField
+                fullWidth
+                multiline
+                rows={8}
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                variant="outlined"
+              />
+            ) : (
+              <Paper sx={{ p: 3, backgroundColor: '#fafafa', minHeight: 200 }}>
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  {transcription.text}
+                </Typography>
+              </Paper>
+            )
+          )}
+
+          {currentTab === 'summary' && (
             <Paper sx={{ p: 3, backgroundColor: '#fafafa', minHeight: 200 }}>
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                {transcription.text}
-              </Typography>
+              {summaryLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                  <CircularProgress size={40} />
+                  <Typography variant="body1" sx={{ ml: 2 }}>
+                    Генерируем саммари...
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  {summary}
+                </Typography>
+              )}
             </Paper>
           )}
         </CardContent>
