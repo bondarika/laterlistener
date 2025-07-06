@@ -1,0 +1,21 @@
+﻿{
+  // Форматировать файл при сохранении
+  "editor.formatOnSave": true,
+
+  // Разрешить VSCode применять ESLint автофиксы при сохранении
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.fixAll.eslint": true
+  },
+
+  // Установить Prettier как основной форматтер
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // Валидация ESLint для нужных языков
+  "eslint.validate": ["javascript", "typescript", "typescriptreact"],
+
+  // Отключить встроенный форматтер для TSX/JSX, чтобы не мешал Prettier
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
