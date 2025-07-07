@@ -1,37 +1,52 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-
-export interface TranscriptBlock {
-  id: string;
-  speaker: string;
-  text: string;
-  start: number;
-  end: number;
-}
-
-export interface Transcript {
-  id: string;
-  blocks: TranscriptBlock[];
-  summary?: string;
-}
+import type { Transcript, UploadResponse } from '../types/Transcript';
+import {
+  getAllTranscripts,
+  getTranscriptById,
+  updateTranscript,
+  getTranscriptSummary,
+  downloadTranscript,
+  uploadAudioFile,
+} from '../services/api';
 
 class TranscriptStore {
   transcript: Transcript | null = null;
+  transcripts: Transcript[] = [];
   loading: boolean = false;
   error: string | null = null;
   summaryLoading: boolean = false;
+  summary: string | null = null;
 
   constructor() {
     makeAutoObservable(this);
+  }
+
+  async loadAll() {
+    this.loading = true;
+    this.error = null;
+    try {
+      const data = await getAllTranscripts();
+      runInAction(() => {
+        this.transcripts = data;
+        this.loading = false;
+      });
+    } catch (e: unknown) {
+      runInAction(() => {
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Unknown error';
+        }
+        this.loading = false;
+      });
+    }
   }
 
   async loadById(id: string) {
     this.loading = true;
     this.error = null;
     try {
-      // Replace with real API call
-      const response = await fetch(`/api/transcripts/${id}`);
-      if (!response.ok) throw new Error('Failed to load transcript');
-      const data = await response.json();
+      const data = await getTranscriptById(id);
       runInAction(() => {
         this.transcript = data;
         this.loading = false;
@@ -48,38 +63,56 @@ class TranscriptStore {
     }
   }
 
-  editBlock(blockId: string, newText: string) {
+  editText(newText: string) {
     if (!this.transcript) return;
-    const block = this.transcript.blocks.find((b) => b.id === blockId);
-    if (block) block.text = newText;
+    this.transcript.text = newText;
   }
 
-  editSpeaker(blockId: string, newSpeaker: string) {
+  editSpeakers(newSpeakers: string[]) {
     if (!this.transcript) return;
-    const block = this.transcript.blocks.find((b) => b.id === blockId);
-    if (block) block.speaker = newSpeaker;
+    this.transcript.speakers = newSpeakers;
   }
 
   async save() {
     if (!this.transcript) return;
-    // Replace with real API call
-    await fetch(`/api/transcripts/${this.transcript.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(this.transcript),
+    const updatedTranscript = await updateTranscript(this.transcript.id, {
+      text: this.transcript.text,
+      speakers: this.transcript.speakers,
+    });
+    runInAction(() => {
+      this.transcript = updatedTranscript;
     });
   }
 
   async fetchSummary() {
     if (!this.transcript) return;
     this.summaryLoading = true;
-    // Replace with real API call
-    const response = await fetch(`/api/transcripts/${this.transcript.id}/summary`);
-    const data = await response.json();
-    runInAction(() => {
-      if (this.transcript) this.transcript.summary = data.summary;
-      this.summaryLoading = false;
-    });
+    this.error = null;
+    try {
+      const data = await getTranscriptSummary(this.transcript.id);
+      runInAction(() => {
+        this.summary = data.summary;
+        this.summaryLoading = false;
+      });
+    } catch (e: unknown) {
+      runInAction(() => {
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Unknown error';
+        }
+        this.summaryLoading = false;
+      });
+    }
+  }
+
+  async downloadTranscriptFile(format: 'txt' | 'pdf'): Promise<Blob> {
+    if (!this.transcript) throw new Error('No transcript loaded');
+    return await downloadTranscript(this.transcript.id, format);
+  }
+
+  async uploadAudioFile(file: File): Promise<UploadResponse> {
+    return await uploadAudioFile(file);
   }
 }
 

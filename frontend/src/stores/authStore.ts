@@ -10,10 +10,10 @@ class AuthStore {
     makeAutoObservable(this);
   }
 
-  async registerWithTelegram(userData: UserData) {
+  async login(userData: UserData) {
     try {
       await postUserData({ id: userData.id }); // токен кладётся в cookie
-      // теперь делаем запрос whoami, чтобы получить userId и убедиться, что авторизация прошла
+      // теперь делаем get-запрос, чтобы получить userId и убедиться, что авторизация прошла
       const user = await getUserData();
       this.userId = user.id;
       this.isAuthenticated = true;
@@ -24,7 +24,6 @@ class AuthStore {
   }
 
   async logout() {
-    // запрос на logout к бэку (напомнить им удалить токен из куки)
     await logoutUser();
     this.userId = null;
     this.isAuthenticated = false;
