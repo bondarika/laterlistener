@@ -1,29 +1,14 @@
-import { useState } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { CssBaseline, Box } from '@mui/material';
+import { observer } from 'mobx-react-lite';
+import { authStore } from './stores/authStore';
 import Header from './components/Header/Header';
-import AudioPlayer from './components/AudioPlayer/AudioPlayer';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transcript from './pages/Transcript';
 import Share from './pages/Share';
 import './App.css';
-
-interface AudioData {
-  fileName: string;
-  duration: number;
-  id: string;
-}
-
-{
-  /* 
-  это для авторизации (переместить скорее всего надо будет)
-import WebApp from '@twa-dev/sdk';
-const params = new URLSearchParams(WebApp.initData);
-const userData = JSON.parse(params.get('user') || 'null');
-*/
-}
 
 const theme = createTheme({
   palette: {
@@ -36,55 +21,58 @@ const theme = createTheme({
   },
 });
 
-function App() {
-  const [currentAudio, setCurrentAudio] = useState<AudioData | null>(null);
-  const [currentTab, setCurrentTab] = useState('transcript');
+// Protected Route component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = observer(({ children }) => {
+  if (!authStore.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+});
 
-  const handlePlayAudio = (audioData: AudioData) => {
-    setCurrentAudio(audioData);
-  };
-
-  const handleCloseAudio = () => {
-    setCurrentAudio(null);
-  };
-
+const App = observer(() => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', pb: currentAudio ? 10 : 0 }}>
+        <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
               path="/dashboard"
               element={
-                <>
-                  <Header />
-                  <Dashboard onPlayAudio={handlePlayAudio} />
-                </>
+                <ProtectedRoute>
+                  <>
+                    <Header />
+                    <Dashboard />
+                  </>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/transcript/:id"
               element={
-                <>
-                  <Header />
-                  <Transcript
-                    onPlayAudio={handlePlayAudio}
-                    currentTab={currentTab}
-                    onTabChange={setCurrentTab}
-                  />
-                </>
+                <ProtectedRoute>
+                  <>
+                    <Header />
+                    <Transcript />
+                  </>
+                </ProtectedRoute>
               }
             />
-            <Route path="/share/:id" element={<Share />} />
+            <Route
+              path="/share/:id"
+              element={
+                <ProtectedRoute>
+                  <Share />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
-          {currentAudio && <AudioPlayer audioData={currentAudio} onClose={handleCloseAudio} />}
         </Box>
       </Router>
     </ThemeProvider>
   );
-}
+});
 
 export default App;

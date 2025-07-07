@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -8,34 +8,25 @@ import {
   LinearProgress,
   Alert,
   Paper,
-  Chip,
 } from '@mui/material';
 import { CloudUpload, AudioFile, PlayArrow } from '@mui/icons-material';
-import { loadSettings } from '../../utils/settings';
+import { observer } from 'mobx-react-lite';
+import { transcriptStore } from '../../stores/transcriptStore';
 
-interface SettingsType {
-  language: string;
-  model: string;
-  quality: string;
-  outputFormat: string;
+interface AudioUploadProps {
+  onUploadComplete?: () => void;
 }
 
-const AudioUpload: React.FC = () => {
+const AudioUpload: React.FC<AudioUploadProps> = observer(({ onUploadComplete }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [error, setError] = useState<string>('');
-  const [currentSettings, setCurrentSettings] = useState<SettingsType | null>(null);
-
-  useEffect(() => {
-    // Загружаем текущие настройки
-    setCurrentSettings(loadSettings());
-  }, []);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Проверяем, что это аудиофайл
+      // Check if it's an audio file
       if (file.type.startsWith('audio/')) {
         setSelectedFile(file);
         setError('');
@@ -51,23 +42,43 @@ const AudioUpload: React.FC = () => {
 
     setUploading(true);
     setUploadProgress(0);
+    setError('');
 
-    // Имитация загрузки
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          return 100;
+    try {
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      // Upload file using transcriptStore
+      await transcriptStore.uploadAudioFile(selectedFile);
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Wait a bit to show completion
+      setTimeout(() => {
+        setUploading(false);
+        setSelectedFile(null);
+        setUploadProgress(0);
+
+        // Call callback if provided
+        if (onUploadComplete) {
+          onUploadComplete();
         }
-        return prev + 10;
-      });
-    }, 200);
-
-    // Здесь будет реальная логика загрузки на сервер
-    // const formData = new FormData();
-    // formData.append('audio', selectedFile);
-    // await fetch('/api/upload', { method: 'POST', body: formData });
+      }, 500);
+    } catch (error) {
+      setUploading(false);
+      setUploadProgress(0);
+      setError('Ошибка загрузки файла. Попробуйте еще раз.');
+      console.error('Upload error:', error);
+    }
   };
 
   const handlePlayPreview = () => {
@@ -84,32 +95,6 @@ const AudioUpload: React.FC = () => {
           Загрузка аудиофайла
         </Typography>
 
-        {currentSettings && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Текущие настройки:
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label={`Язык: ${currentSettings.language.toUpperCase()}`}
-                size="small"
-                variant="outlined"
-              />
-              <Chip label={`Модель: ${currentSettings.model}`} size="small" variant="outlined" />
-              <Chip
-                label={`Качество: ${currentSettings.quality}`}
-                size="small"
-                variant="outlined"
-              />
-              <Chip
-                label={`Формат: ${currentSettings.outputFormat.toUpperCase()}`}
-                size="small"
-                variant="outlined"
-              />
-            </Box>
-          </Box>
-        )}
-
         <Box sx={{ mb: 2 }}>
           <input
             accept="audio/*"
@@ -117,9 +102,16 @@ const AudioUpload: React.FC = () => {
             id="audio-file-input"
             type="file"
             onChange={handleFileSelect}
+            disabled={uploading}
           />
           <label htmlFor="audio-file-input">
-            <Button variant="outlined" component="span" startIcon={<CloudUpload />} sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              component="span"
+              startIcon={<CloudUpload />}
+              sx={{ mb: 2 }}
+              disabled={uploading}
+            >
               Выбрать аудиофайл
             </Button>
           </label>
@@ -142,6 +134,7 @@ const AudioUpload: React.FC = () => {
                 onClick={handlePlayPreview}
                 variant="outlined"
                 size="small"
+                disabled={uploading}
               >
                 Прослушать
               </Button>
@@ -175,6 +168,6 @@ const AudioUpload: React.FC = () => {
       </CardContent>
     </Card>
   );
-};
+});
 
 export default AudioUpload;

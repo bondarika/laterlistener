@@ -16,68 +16,25 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
-import {
-  ArrowBack,
-  Edit,
-  Save,
-  Cancel,
-  ContentCopy,
-  Download,
-  Share,
-  PlayArrow,
-} from '@mui/icons-material';
+import { ArrowBack, Edit, Save, Cancel, ContentCopy, Download, Share } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
+import { transcriptStore } from '../stores/transcriptStore';
 
-interface TranscriptProps {
-  onPlayAudio: (audio: { fileName: string; duration: number; id: string }) => void;
-  currentTab: string;
-  onTabChange: (tab: string) => void;
-}
-
-interface Transcription {
-  id: string;
-  fileName: string;
-  duration: string;
-  language: string;
-  confidence: number;
-  text: string;
-  timestamp: string;
-  status: string;
-}
-
-const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabChange }) => {
+const Transcript: React.FC = observer(() => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [transcription, setTranscription] = useState<Transcription | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedText, setEditedText] = useState<string>('');
-  const [summary, setSummary] = useState<string>('');
-  const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
+  const [currentTab, setCurrentTab] = useState<string>('transcript');
 
   const loadTranscription = useCallback(async () => {
-    try {
-      setLoading(true);
-      // Моковые данные
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (!id) return;
 
-      setTranscription({
-        id: id,
-        fileName: 'meeting_audio.mp3',
-        duration: '15:30',
-        language: 'ru',
-        confidence: 0.95,
-        text: 'Привет! Это пример транскрибуции аудиофайла.',
-        timestamp: '2024-01-15 14:30:25',
-        status: 'completed',
-      });
-    } catch {
-      setError(
-        '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0442\u0440\u0430\u043d\u0441\u043a\u0440\u0438\u043f\u0446\u0438\u0438',
-      );
-    } finally {
-      setLoading(false);
+    try {
+      await transcriptStore.loadById(id);
+    } catch (error) {
+      console.error('Failed to load transcript:', error);
     }
   }, [id]);
 
@@ -86,16 +43,22 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
   }, [id, loadTranscription]);
 
   const handleEdit = () => {
-    setEditedText(transcription.text);
-    setIsEditing(true);
+    if (transcriptStore.transcript) {
+      setEditedText(transcriptStore.transcript.text);
+      setIsEditing(true);
+    }
   };
 
   const handleSave = async () => {
-    setTranscription((prev) => ({
-      ...prev,
-      text: editedText,
-    }));
-    setIsEditing(false);
+    if (!transcriptStore.transcript) return;
+
+    try {
+      transcriptStore.editText(editedText);
+      await transcriptStore.save();
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to save transcript:', error);
+    }
   };
 
   const handleCancel = () => {
@@ -104,71 +67,49 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
   };
 
   const handleCopy = () => {
-    const textToCopy = currentTab === 'transcript' ? transcription.text : summary;
+    const textToCopy =
+      currentTab === 'transcript'
+        ? transcriptStore.transcript?.text || ''
+        : transcriptStore.summary || '';
     navigator.clipboard.writeText(textToCopy);
   };
 
-  const handleDownload = () => {
-    const textToDownload = currentTab === 'transcript' ? transcription.text : summary;
-    const fileName =
-      currentTab === 'transcript'
-        ? `${transcription.fileName}.txt`
-        : `${transcription.fileName}_summary.txt`;
+  const handleDownload = async () => {
+    if (!transcriptStore.transcript) return;
 
-    const blob = new Blob([textToDownload], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = await transcriptStore.downloadTranscriptFile('txt');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcript_${transcriptStore.transcript.id}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
   };
 
   const handleShare = () => {
-    navigate(`/share/${id}`);
-  };
-
-  const handlePlayAudio = () => {
-    // Конвертируем время из формата "15:30" в секунды
-    const timeParts = transcription.duration.split(':');
-    const durationInSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
-
-    onPlayAudio({
-      fileName: transcription.fileName,
-      duration: durationInSeconds,
-      id: transcription.id,
-    });
-  };
-
-  const handleTabChange = (event, newValue) => {
-    onTabChange(newValue);
-  };
-
-  const generateSummary = useCallback(async () => {
-    if (summary) return; // Если саммари уже есть, не генерируем повторно
-
-    setSummaryLoading(true);
-    try {
-      // Имитация генерации саммари
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setSummary(
-        'Это краткое содержание транскрипции. Основные темы обсуждения включают планирование проекта, распределение задач и установление сроков. Участники встречи договорились о следующих шагах и назначили ответственных за выполнение ключевых задач.',
-      );
-    } catch (error) {
-      console.error('Ошибка генерации саммари:', error);
-    } finally {
-      setSummaryLoading(false);
+    if (transcriptStore.transcript) {
+      navigate(`/share/${transcriptStore.transcript.id}`);
     }
-  }, [summary]);
+  };
 
-  // Генерируем саммари при загрузке страницы
-  useEffect(() => {
-    if (!summary && !summaryLoading) {
-      generateSummary();
+  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+    setCurrentTab(newValue);
+
+    // Load summary when switching to summary tab
+    if (newValue === 'summary' && transcriptStore.transcript && !transcriptStore.summary) {
+      transcriptStore.fetchSummary();
     }
-  }, [summary, summaryLoading, generateSummary]);
+  };
 
-  if (loading) {
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('ru-RU');
+  };
+
+  if (transcriptStore.loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -178,11 +119,11 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
     );
   }
 
-  if (error || !transcription) {
+  if (transcriptStore.error || !transcriptStore.transcript) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          {error || 'Транскрипция не найдена'}
+          {transcriptStore.error || 'Транскрипция не найдена'}
         </Alert>
         <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/dashboard')}>
           Вернуться к дашборду
@@ -190,6 +131,8 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
       </Container>
     );
   }
+
+  const transcript = transcriptStore.transcript;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -206,18 +149,12 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
             <Typography variant="h4" component="h1" gutterBottom>
-              {transcription.fileName}
+              Транскрипция #{transcript.id}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-              <Chip
-                label={transcription.status === 'completed' ? 'Завершено' : 'В процессе'}
-                color={transcription.status === 'completed' ? 'success' : 'warning'}
-              />
-              <Chip
-                label={`${(transcription.confidence * 100).toFixed(1)}% точность`}
-                color="primary"
-              />
-              <Chip label={transcription.duration} variant="outlined" />
+              <Chip label="Завершено" color="success" />
+              <Chip label={`Создано: ${formatDate(transcript.created_at)}`} variant="outlined" />
+              <Chip label={`Обновлено: ${formatDate(transcript.updated_at)}`} variant="outlined" />
             </Box>
           </Box>
         </Box>
@@ -225,7 +162,7 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          {/* Вкладки */}
+          {/* Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <Tabs value={currentTab} onChange={handleTabChange}>
               <Tab label="Транскрипция" value="transcript" />
@@ -233,7 +170,7 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
             </Tabs>
           </Box>
 
-          {/* Заголовок и кнопки действий */}
+          {/* Header and action buttons */}
           <Box
             sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
           >
@@ -274,9 +211,6 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
                     <IconButton onClick={handleCopy} size="small">
                       <ContentCopy />
                     </IconButton>
-                    <IconButton onClick={handlePlayAudio} size="small">
-                      <PlayArrow />
-                    </IconButton>
                     <IconButton onClick={handleDownload} size="small">
                       <Download />
                     </IconButton>
@@ -303,7 +237,7 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
 
           <Divider sx={{ mb: 2 }} />
 
-          {/* Контент вкладок */}
+          {/* Tab content */}
           {currentTab === 'transcript' &&
             (isEditing ? (
               <TextField
@@ -317,14 +251,14 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
             ) : (
               <Paper sx={{ p: 3, backgroundColor: '#fafafa', minHeight: 200 }}>
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {transcription.text}
+                  {transcript.text}
                 </Typography>
               </Paper>
             ))}
 
           {currentTab === 'summary' && (
             <Paper sx={{ p: 3, backgroundColor: '#fafafa', minHeight: 200 }}>
-              {summaryLoading ? (
+              {transcriptStore.summaryLoading ? (
                 <Box
                   sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}
                 >
@@ -333,10 +267,23 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
                     Генерируем саммари...
                   </Typography>
                 </Box>
-              ) : (
+              ) : transcriptStore.summary ? (
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {summary}
+                  {transcriptStore.summary}
                 </Typography>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Саммари еще не сгенерировано
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    onClick={() => transcriptStore.fetchSummary()}
+                    sx={{ mt: 2 }}
+                  >
+                    Сгенерировать саммари
+                  </Button>
+                </Box>
               )}
             </Paper>
           )}
@@ -344,6 +291,6 @@ const Transcript: React.FC<TranscriptProps> = ({ onPlayAudio, currentTab, onTabC
       </Card>
     </Container>
   );
-};
+});
 
 export default Transcript;
