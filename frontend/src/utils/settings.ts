@@ -2,8 +2,21 @@
 
 const SETTINGS_KEY = 'transcription_settings';
 
+// Типы для настроек
+export interface SettingsType {
+  language: string;
+  model: string;
+  quality: string;
+  autoDetectLanguage: boolean;
+  punctuation: boolean;
+  speakerDiarization: boolean;
+  confidenceThreshold: number;
+  maxFileSize: number;
+  outputFormat: string;
+}
+
 // Настройки по умолчанию
-export const defaultSettings = {
+export const defaultSettings: SettingsType = {
   language: 'ru',
   model: 'whisper-large',
   quality: 'high',
@@ -12,11 +25,11 @@ export const defaultSettings = {
   speakerDiarization: false,
   confidenceThreshold: 0.8,
   maxFileSize: 50,
-  outputFormat: 'txt'
+  outputFormat: 'txt',
 };
 
 // Загрузка настроек из localStorage
-export const loadSettings = () => {
+export const loadSettings = (): SettingsType => {
   try {
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
     if (savedSettings) {
@@ -31,7 +44,7 @@ export const loadSettings = () => {
 };
 
 // Сохранение настроек в localStorage
-export const saveSettings = (settings) => {
+export const saveSettings = (settings: SettingsType): boolean => {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     return true;
@@ -42,7 +55,7 @@ export const saveSettings = (settings) => {
 };
 
 // Сброс настроек к умолчанию
-export const resetSettings = () => {
+export const resetSettings = (): boolean => {
   try {
     localStorage.removeItem(SETTINGS_KEY);
     return true;
@@ -53,20 +66,23 @@ export const resetSettings = () => {
 };
 
 // Получение конкретной настройки
-export const getSetting = (key) => {
+export const getSetting = (key: keyof SettingsType): SettingsType[keyof SettingsType] => {
   const settings = loadSettings();
   return settings[key];
 };
 
 // Обновление конкретной настройки
-export const updateSetting = (key, value) => {
+export const updateSetting = <K extends keyof SettingsType>(
+  key: K,
+  value: SettingsType[K],
+): boolean => {
   const settings = loadSettings();
   settings[key] = value;
   return saveSettings(settings);
 };
 
 // Проверка, есть ли сохраненные настройки
-export const hasSavedSettings = () => {
+export const hasSavedSettings = (): boolean => {
   return localStorage.getItem(SETTINGS_KEY) !== null;
 };
 
@@ -82,6 +98,6 @@ export const getSettingsForAPI = () => {
     speaker_diarization: settings.speakerDiarization,
     confidence_threshold: settings.confidenceThreshold,
     max_file_size: settings.maxFileSize,
-    output_format: settings.outputFormat
+    output_format: settings.outputFormat,
   };
-}; 
+};

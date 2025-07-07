@@ -1,25 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Paper,
-  Typography,
-  Box,
-  Alert,
-  CircularProgress,
-  Button
-} from '@mui/material';
+import { Container, Paper, Typography, Box, Alert, CircularProgress, Button } from '@mui/material';
 import { Telegram, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
-  const [status, setStatus] = useState('waiting'); // waiting, loading, success, error
-  const [error, setError] = useState('');
+type Status = 'waiting' | 'loading' | 'success' | 'error';
+
+const Login: React.FC = () => {
+  const [status, setStatus] = useState<Status>('waiting');
+  const [error, setError] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
     // Проверяем, авторизован ли пользователь через Telegram
     // checkTelegramAuth();
-    
+
     // Временно пропускаем авторизацию для тестирования
     setStatus('waiting');
   }, []);
@@ -27,11 +21,11 @@ const Login = () => {
   const checkTelegramAuth = async () => {
     try {
       setStatus('loading');
-      
+
       // Здесь будет проверка авторизации через Telegram
       // Например, проверка токена в localStorage или запрос к API
       const telegramAuth = localStorage.getItem('telegram_auth');
-      
+
       if (telegramAuth) {
         // Пользователь уже авторизован
         setStatus('success');
@@ -41,9 +35,11 @@ const Login = () => {
       } else {
         setStatus('waiting');
       }
-    } catch (err) {
+    } catch {
       setStatus('error');
-      setError('Ошибка проверки авторизации');
+      setError(
+        '\u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0430\u0432\u0442\u043e\u0440\u0438\u0437\u0430\u0446\u0438\u0438',
+      );
     }
   };
 
@@ -53,7 +49,7 @@ const Login = () => {
       // Используем Telegram Web App API
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
-      
+
       // Получаем данные пользователя
       const user = window.Telegram.WebApp.initDataUnsafe?.user;
       if (user) {
@@ -105,11 +101,7 @@ const Login = () => {
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
-            <Button
-              variant="contained"
-              onClick={checkTelegramAuth}
-              size="large"
-            >
+            <Button variant="contained" onClick={checkTelegramAuth} size="large">
               Попробовать снова
             </Button>
           </Box>
@@ -125,7 +117,7 @@ const Login = () => {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               Для доступа к транскрибуции аудио необходимо авторизоваться через Telegram
             </Typography>
-            
+
             <Button
               variant="contained"
               size="large"
@@ -135,11 +127,11 @@ const Login = () => {
             >
               Войти через Telegram
             </Button>
-            
+
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Авторизация происходит автоматически в Telegram
             </Typography>
-            
+
             {/* Временная кнопка для тестирования */}
             <Button
               variant="outlined"
@@ -163,4 +155,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

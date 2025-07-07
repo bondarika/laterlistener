@@ -36,9 +36,13 @@ class TranscriptStore {
         this.transcript = data;
         this.loading = false;
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       runInAction(() => {
-        this.error = e.message;
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Unknown error';
+        }
         this.loading = false;
       });
     }

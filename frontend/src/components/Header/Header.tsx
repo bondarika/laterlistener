@@ -2,7 +2,7 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Box } from '@mui/material';
 import { Mic, Headphones } from '@mui/icons-material';
 
-const Header = () => {
+const Header: React.FC = () => {
   return (
     <AppBar position="static" elevation={2}>
       <Toolbar>
@@ -10,13 +10,13 @@ const Header = () => {
           <Mic sx={{ fontSize: 32 }} />
           <Headphones sx={{ fontSize: 32 }} />
         </Box>
-        <Typography 
-          variant="h5" 
-          component="h1" 
-          sx={{ 
-            ml: 2, 
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{
+            ml: 2,
             fontWeight: 'bold',
-            flexGrow: 1 
+            flexGrow: 1,
           }}
         >
           LaterListener
@@ -29,4 +29,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export default Header;

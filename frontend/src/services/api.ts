@@ -33,11 +33,14 @@ export const getUserData = async () => {
     } else {
       throw new Error('User data not found in response');
     }
-  } catch (error: any) {
-    if (error.response) {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      // @ts-expect-error: error.response is not typed on unknown error, but is present for Axios errors
       console.error('API Error:', error.response.status, error.response.data);
-    } else {
+    } else if (error instanceof Error) {
       console.error('Network Error:', error.message);
+    } else {
+      console.error('Unknown error:', error);
     }
     throw error;
   }

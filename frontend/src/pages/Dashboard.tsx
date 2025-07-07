@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Container,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -12,7 +11,7 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-  Fab
+  Fab,
 } from '@mui/material';
 import {
   Add,
@@ -23,21 +22,39 @@ import {
   Download,
   Share,
   Settings as SettingsIcon,
-  Summarize
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import AudioUpload from '../components/AudioUpload/AudioUpload';
 import Settings from '../components/Settings/Settings';
 
-const Dashboard = ({ onPlayAudio }) => {
-  const [recentTranscriptions, setRecentTranscriptions] = useState([]);
-  const [stats, setStats] = useState({
+interface DashboardProps {
+  onPlayAudio: (audio: { fileName: string; duration: number; id: string }) => void;
+}
+
+interface Transcription {
+  id: string;
+  fileName: string;
+  duration: string;
+  status: string;
+  accuracy: number | null;
+  timestamp: string;
+}
+
+interface Stats {
+  totalFiles: number;
+  totalDuration: number;
+  accuracy: number;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
+  const [recentTranscriptions, setRecentTranscriptions] = useState<Transcription[]>([]);
+  const [stats, setStats] = useState<Stats>({
     totalFiles: 0,
     totalDuration: 0,
-    accuracy: 0
+    accuracy: 0,
   });
-  const [showUpload, setShowUpload] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showUpload, setShowUpload] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,7 +72,7 @@ const Dashboard = ({ onPlayAudio }) => {
         duration: '15:30',
         status: 'completed',
         accuracy: 0.95,
-        timestamp: '2024-01-15 14:30:25'
+        timestamp: '2024-01-15 14:30:25',
       },
       {
         id: '2',
@@ -63,7 +80,7 @@ const Dashboard = ({ onPlayAudio }) => {
         duration: '8:45',
         status: 'processing',
         accuracy: null,
-        timestamp: '2024-01-15 13:15:10'
+        timestamp: '2024-01-15 13:15:10',
       },
       {
         id: '3',
@@ -71,14 +88,14 @@ const Dashboard = ({ onPlayAudio }) => {
         duration: '45:20',
         status: 'completed',
         accuracy: 0.92,
-        timestamp: '2024-01-14 16:45:30'
-      }
+        timestamp: '2024-01-14 16:45:30',
+      },
     ]);
 
     setStats({
       totalFiles: 15,
       totalDuration: 180, // в минутах
-      accuracy: 0.94
+      accuracy: 0.94,
     });
   };
 
@@ -86,27 +103,27 @@ const Dashboard = ({ onPlayAudio }) => {
     setShowUpload(true);
   };
 
-  const handleViewTranscription = (id) => {
+  const handleViewTranscription = (id: string) => {
     navigate(`/transcript/${id}`);
   };
 
-  const handlePlayAudio = (item) => {
+  const handlePlayAudio = (item: Transcription) => {
     // Конвертируем время из формата "15:30" в секунды
     const timeParts = item.duration.split(':');
     const durationInSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
-    
+
     onPlayAudio({
       fileName: item.fileName,
       duration: durationInSeconds,
-      id: item.id
+      id: item.id,
     });
   };
 
-  const handleShareTranscription = (id) => {
+  const handleShareTranscription = (id: string) => {
     navigate(`/share/${id}`);
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
     switch (status) {
       case 'completed':
         return 'success';
@@ -119,7 +136,7 @@ const Dashboard = ({ onPlayAudio }) => {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status: string): string => {
     switch (status) {
       case 'completed':
         return 'Завершено';
@@ -136,11 +153,7 @@ const Dashboard = ({ onPlayAudio }) => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ mb: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setShowUpload(false)}
-            sx={{ mb: 2 }}
-          >
+          <Button variant="outlined" onClick={() => setShowUpload(false)} sx={{ mb: 2 }}>
             ← Назад к дашборду
           </Button>
         </Box>
@@ -153,11 +166,7 @@ const Dashboard = ({ onPlayAudio }) => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ mb: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setShowSettings(false)}
-            sx={{ mb: 2 }}
-          >
+          <Button variant="outlined" onClick={() => setShowSettings(false)} sx={{ mb: 2 }}>
             ← Назад к дашборду
           </Button>
         </Box>
@@ -179,82 +188,79 @@ const Dashboard = ({ onPlayAudio }) => {
       </Box>
 
       {/* Статистика */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Storage sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    {stats.totalFiles}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Всего файлов
-                  </Typography>
-                </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+          gap: 3,
+          mb: 4,
+        }}
+      >
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Storage sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4" component="div">
+                  {stats.totalFiles}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Всего файлов
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUp sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    {Math.round(stats.totalDuration)} мин
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Общая длительность
-                  </Typography>
-                </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <TrendingUp sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4" component="div">
+                  {Math.round(stats.totalDuration)} мин
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Общая длительность
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <History sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" component="div">
-                    {Math.round(stats.accuracy * 100)}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Средняя точность
-                  </Typography>
-                </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <History sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
+              <Box>
+                <Typography variant="h4" component="div">
+                  {Math.round(stats.accuracy * 100)}%
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Средняя точность
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Последние транскрипции */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              Последние транскрипции
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<Add />}
-              onClick={handleNewTranscription}
-            >
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+          >
+            <Typography variant="h6">Последние транскрипции</Typography>
+            <Button variant="outlined" startIcon={<Add />} onClick={handleNewTranscription}>
               Новая транскрипция
             </Button>
           </Box>
-          
+
           <List>
             {recentTranscriptions.map((item) => (
-              <ListItem 
-                key={item.id} 
+              <ListItem
+                key={item.id}
                 divider
                 secondaryAction={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -263,16 +269,10 @@ const Dashboard = ({ onPlayAudio }) => {
                       color={getStatusColor(item.status)}
                       size="small"
                     />
-                    <IconButton
-                      size="small"
-                      onClick={() => handlePlayAudio(item)}
-                    >
+                    <IconButton size="small" onClick={() => handlePlayAudio(item)}>
                       <PlayArrow />
                     </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleShareTranscription(item.id)}
-                    >
+                    <IconButton size="small" onClick={() => handleShareTranscription(item.id)}>
                       <Share />
                     </IconButton>
                     <IconButton size="small">
@@ -283,11 +283,11 @@ const Dashboard = ({ onPlayAudio }) => {
               >
                 <ListItemText
                   primary={
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
+                    <Typography
+                      variant="body1"
+                      sx={{
                         cursor: 'pointer',
-                        '&:hover': { color: 'primary.main' }
+                        '&:hover': { color: 'primary.main' },
                       }}
                       onClick={() => handleViewTranscription(item.id)}
                     >
@@ -314,33 +314,31 @@ const Dashboard = ({ onPlayAudio }) => {
       </Card>
 
       {/* Быстрые действия */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={4}>
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
-            startIcon={<Add />}
-            onClick={handleNewTranscription}
-            sx={{ py: 2 }}
-          >
-            Создать новую транскрипцию
-          </Button>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Button
-            fullWidth
-            variant="outlined"
-            size="large"
-            startIcon={<History />}
-            onClick={() => navigate('/history')}
-            sx={{ py: 2 }}
-          >
-            История транскрипций
-          </Button>
-        </Grid>
-      </Grid>
+      <Box
+        sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}
+      >
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
+          startIcon={<Add />}
+          onClick={handleNewTranscription}
+          sx={{ py: 2 }}
+        >
+          Создать новую транскрипцию
+        </Button>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          size="large"
+          startIcon={<History />}
+          onClick={() => navigate('/history')}
+          sx={{ py: 2 }}
+        >
+          История транскрипций
+        </Button>
+      </Box>
 
       {/* Плавающая кнопка для настроек */}
       <Fab
@@ -355,4 +353,4 @@ const Dashboard = ({ onPlayAudio }) => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

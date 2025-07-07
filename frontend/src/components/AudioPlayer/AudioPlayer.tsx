@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Paper,
-  Container,
-  Box,
-  Typography,
-  IconButton,
-  Slider
-} from '@mui/material';
-import {
-  PlayArrow,
-  Pause,
-  Download,
-  Share,
-  Close
-} from '@mui/icons-material';
+import { Paper, Container, Box, Typography, IconButton, Slider } from '@mui/material';
+import { PlayArrow, Pause, Download, Share, Close } from '@mui/icons-material';
 
-const AudioPlayer = ({ audioData, onClose }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [currentFile, setCurrentFile] = useState('');
+interface AudioData {
+  fileName: string;
+  duration: number;
+}
+
+interface AudioPlayerProps {
+  audioData: AudioData;
+  onClose: () => void;
+}
+
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, onClose }) => {
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+  const [currentFile, setCurrentFile] = useState<string>('');
 
   // Обновляем данные при изменении audioData
   useEffect(() => {
@@ -35,11 +32,11 @@ const AudioPlayer = ({ audioData, onClose }) => {
     setIsPlaying(!isPlaying);
   };
 
-  const handleSeek = (event, newValue) => {
-    setCurrentTime(newValue);
+  const handleSeek = (_event: Event, newValue: number | number[]) => {
+    setCurrentTime(typeof newValue === 'number' ? newValue : newValue[0]);
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -61,7 +58,7 @@ const AudioPlayer = ({ audioData, onClose }) => {
         p: 2,
         backgroundColor: 'background.paper',
         borderTop: 1,
-        borderColor: 'divider'
+        borderColor: 'divider',
       }}
     >
       <Container maxWidth="lg">
@@ -76,8 +73,8 @@ const AudioPlayer = ({ audioData, onClose }) => {
               color: 'white',
               flexShrink: 0,
               '&:hover': {
-                backgroundColor: 'primary.dark'
-              }
+                backgroundColor: 'primary.dark',
+              },
             }}
           >
             {isPlaying ? <Pause /> : <PlayArrow />}
@@ -102,14 +99,14 @@ const AudioPlayer = ({ audioData, onClose }) => {
               sx={{
                 '& .MuiSlider-thumb': {
                   width: 12,
-                  height: 12
+                  height: 12,
                 },
                 '& .MuiSlider-track': {
-                  height: 4
+                  height: 4,
                 },
                 '& .MuiSlider-rail': {
-                  height: 4
-                }
+                  height: 4,
+                },
               }}
             />
           </Box>
@@ -132,4 +129,4 @@ const AudioPlayer = ({ audioData, onClose }) => {
   );
 };
 
-export default AudioPlayer; 
+export default AudioPlayer;

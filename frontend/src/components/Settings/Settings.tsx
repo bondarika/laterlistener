@@ -14,54 +14,55 @@ import {
   Divider,
   Button,
   TextField,
-  Grid,
   Alert,
-  Snackbar
+  Snackbar,
 } from '@mui/material';
 import { Settings as SettingsIcon, Save, Restore } from '@mui/icons-material';
 import { loadSettings, saveSettings, resetSettings, defaultSettings } from '../../utils/settings';
 
-const Settings = () => {
-  const [settings, setSettings] = useState(() => {
-    // Загружаем сохраненные настройки из localStorage при инициализации
-    return loadSettings();
-  });
+interface SettingsType {
+  language: string;
+  model: string;
+  quality: string;
+  outputFormat: string;
+  maxFileSize: number;
+  confidenceThreshold: number;
+  autoDetectLanguage: boolean;
+  punctuation: boolean;
+  speakerDiarization: boolean;
+}
 
-  const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, success, error
+type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
-  const handleSettingChange = (setting, value) => {
-    setSettings(prev => ({
+const Settings: React.FC = () => {
+  const [settings, setSettings] = useState<SettingsType>(() => loadSettings());
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+
+  const handleSettingChange = (
+    setting: keyof SettingsType,
+    value: SettingsType[keyof SettingsType],
+  ) => {
+    setSettings((prev) => ({
       ...prev,
-      [setting]: value
+      [setting]: value,
     }));
   };
 
   const handleSaveSettings = async () => {
     try {
       setSaveStatus('saving');
-      
-      // Сохраняем настройки используя утилиту
       const success = saveSettings(settings);
-      
       if (!success) {
         throw new Error('Ошибка сохранения в localStorage');
       }
-      
-      // Имитация отправки на сервер (можно заменить на реальный API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setSaveStatus('success');
-      
-      // Скрываем сообщение об успехе через 3 секунды
       setTimeout(() => {
         setSaveStatus('idle');
       }, 3000);
-      
     } catch (error) {
       console.error('Ошибка сохранения настроек:', error);
       setSaveStatus('error');
-      
-      // Скрываем сообщение об ошибке через 5 секунд
       setTimeout(() => {
         setSaveStatus('idle');
       }, 5000);
@@ -79,13 +80,17 @@ const Settings = () => {
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <SettingsIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">
-              Настройки транскрибуции
-            </Typography>
+            <Typography variant="h6">Настройки транскрибуции</Typography>
           </Box>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+              gap: 3,
+            }}
+          >
+            <Box>
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Язык</InputLabel>
                 <Select
@@ -128,9 +133,9 @@ const Settings = () => {
                   <MenuItem value="high">Высокое (медленно)</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={6}>
+            <Box>
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Формат вывода</InputLabel>
                 <Select
@@ -160,7 +165,7 @@ const Settings = () => {
                 </Typography>
                 <Slider
                   value={settings.confidenceThreshold}
-                  onChange={(e, value) => handleSettingChange('confidenceThreshold', value)}
+                  onChange={(_, value) => handleSettingChange('confidenceThreshold', value)}
                   min={0.1}
                   max={1}
                   step={0.1}
@@ -168,8 +173,8 @@ const Settings = () => {
                   valueLabelDisplay="auto"
                 />
               </Box>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <Divider sx={{ my: 3 }} />
 
@@ -177,43 +182,45 @@ const Settings = () => {
             Дополнительные опции
           </Typography>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.autoDetectLanguage}
-                    onChange={(e) => handleSettingChange('autoDetectLanguage', e.target.checked)}
-                  />
-                }
-                label="Автоопределение языка"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.punctuation}
-                    onChange={(e) => handleSettingChange('punctuation', e.target.checked)}
-                  />
-                }
-                label="Добавить пунктуацию"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.speakerDiarization}
-                    onChange={(e) => handleSettingChange('speakerDiarization', e.target.checked)}
-                  />
-                }
-                label="Разделение по спикерам"
-              />
-            </Grid>
-          </Grid>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 2,
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.autoDetectLanguage}
+                  onChange={(e) => handleSettingChange('autoDetectLanguage', e.target.checked)}
+                />
+              }
+              label="Автоопределение языка"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.punctuation}
+                  onChange={(e) => handleSettingChange('punctuation', e.target.checked)}
+                />
+              }
+              label="Добавить пунктуацию"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.speakerDiarization}
+                  onChange={(e) => handleSettingChange('speakerDiarization', e.target.checked)}
+                />
+              }
+              label="Разделение по спикерам"
+            />
+          </Box>
 
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box
+            sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <Button
               variant="outlined"
               startIcon={<Restore />}
@@ -222,7 +229,7 @@ const Settings = () => {
             >
               Сбросить к умолчанию
             </Button>
-            
+
             <Button
               variant="contained"
               startIcon={<Save />}
@@ -261,4 +268,4 @@ const Settings = () => {
   );
 };
 
-export default Settings; 
+export default Settings;

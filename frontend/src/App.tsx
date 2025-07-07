@@ -2,13 +2,19 @@ import { useState } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { CssBaseline, Box } from '@mui/material';
-import Header from './components/Header';
+import Header from './components/Header/Header';
 import AudioPlayer from './components/AudioPlayer/AudioPlayer';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transcript from './pages/Transcript';
 import Share from './pages/Share';
 import './App.css';
+
+interface AudioData {
+  fileName: string;
+  duration: number;
+  id: string;
+}
 
 {
   /* 
@@ -31,10 +37,10 @@ const theme = createTheme({
 });
 
 function App() {
-  const [currentAudio, setCurrentAudio] = useState(null);
+  const [currentAudio, setCurrentAudio] = useState<AudioData | null>(null);
   const [currentTab, setCurrentTab] = useState('transcript');
 
-  const handlePlayAudio = (audioData) => {
+  const handlePlayAudio = (audioData: AudioData) => {
     setCurrentAudio(audioData);
   };
 
@@ -74,7 +80,7 @@ function App() {
             <Route path="/share/:id" element={<Share />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
-          <AudioPlayer audioData={currentAudio} onClose={handleCloseAudio} />
+          {currentAudio && <AudioPlayer audioData={currentAudio} onClose={handleCloseAudio} />}
         </Box>
       </Router>
     </ThemeProvider>

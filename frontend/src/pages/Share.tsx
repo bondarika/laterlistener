@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Card,
@@ -11,49 +11,56 @@ import {
   Alert,
   CircularProgress,
   IconButton,
-  Snackbar
+  Snackbar,
 } from '@mui/material';
-import {
-  Share as ShareIcon,
-  ContentCopy,
-  Download
-} from '@mui/icons-material';
+import { Share as ShareIcon, ContentCopy, Download } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const Share = () => {
-  const { id } = useParams();
+interface Transcription {
+  id: string;
+  fileName: string;
+  duration: string;
+  text: string;
+  timestamp: string;
+  status: string;
+}
+
+const Share: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [transcription, setTranscription] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [shareUrl, setShareUrl] = useState('');
-  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [transcription, setTranscription] = useState<Transcription | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [showSnackbar, setShowSnackbar] = useState<boolean>(false);
 
-  useEffect(() => {
-    loadTranscription();
-  }, [id]);
-
-  const loadTranscription = async () => {
+  const loadTranscription = useCallback(async () => {
     try {
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       setTranscription({
         id: id,
         fileName: 'meeting_audio.mp3',
         duration: '15:30',
-        text: 'Привет! Это пример транскрибуции аудиофайла.',
+        text: '\u041f\u0440\u0438\u0432\u0435\u0442! \u042d\u0442\u043e \u043f\u0440\u0438\u043c\u0435\u0440 \u0442\u0440\u0430\u043d\u0441\u043a\u0440\u0438\u0431\u0443\u0446\u0438\u0438 \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b\u0430.',
         timestamp: '2024-01-15 14:30:25',
-        status: 'completed'
+        status: 'completed',
       });
 
       setShareUrl(`${window.location.origin}/share/${id}`);
-    } catch (err) {
-      setError('Ошибка загрузки транскрипции');
+    } catch {
+      setError(
+        '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0442\u0440\u0430\u043d\u0441\u043a\u0440\u0438\u043f\u0446\u0438\u0438',
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadTranscription();
+  }, [id, loadTranscription]);
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -86,10 +93,7 @@ const Share = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error || 'Транскрипция не найдена'}
         </Alert>
-        <Button
-          variant="outlined"
-          onClick={() => navigate('/dashboard')}
-        >
+        <Button variant="outlined" onClick={() => navigate('/dashboard')}>
           Вернуться к дашборду
         </Button>
       </Container>
@@ -112,7 +116,7 @@ const Share = () => {
           <Typography variant="h6" gutterBottom>
             Информация о файле
           </Typography>
-          
+
           <Box sx={{ mb: 2 }}>
             <Typography variant="body1" fontWeight="medium">
               {transcription.fileName}
@@ -126,19 +130,14 @@ const Share = () => {
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <Chip 
-              label={transcription.status === 'completed' ? 'Завершено' : 'В процессе'} 
+            <Chip
+              label={transcription.status === 'completed' ? 'Завершено' : 'В процессе'}
               color={transcription.status === 'completed' ? 'success' : 'warning'}
               size="small"
             />
           </Box>
 
-          <Button
-            variant="outlined"
-            startIcon={<Download />}
-            onClick={handleDownload}
-            fullWidth
-          >
+          <Button variant="outlined" startIcon={<Download />} onClick={handleDownload} fullWidth>
             Скачать оригинал
           </Button>
         </CardContent>
@@ -165,11 +164,7 @@ const Share = () => {
             </IconButton>
           </Box>
 
-          <Button
-            variant="contained"
-            startIcon={<ShareIcon />}
-            onClick={handleCopyUrl}
-          >
+          <Button variant="contained" startIcon={<ShareIcon />} onClick={handleCopyUrl}>
             Копировать ссылку
           </Button>
         </CardContent>

@@ -8,25 +8,32 @@ import {
   LinearProgress,
   Alert,
   Paper,
-  Chip
+  Chip,
 } from '@mui/material';
 import { CloudUpload, AudioFile, PlayArrow } from '@mui/icons-material';
 import { loadSettings } from '../../utils/settings';
 
-const AudioUpload = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState('');
-  const [currentSettings, setCurrentSettings] = useState(null);
+interface SettingsType {
+  language: string;
+  model: string;
+  quality: string;
+  outputFormat: string;
+}
+
+const AudioUpload: React.FC = () => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [error, setError] = useState<string>('');
+  const [currentSettings, setCurrentSettings] = useState<SettingsType | null>(null);
 
   useEffect(() => {
     // Загружаем текущие настройки
     setCurrentSettings(loadSettings());
   }, []);
 
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
       // Проверяем, что это аудиофайл
       if (file.type.startsWith('audio/')) {
@@ -76,37 +83,33 @@ const AudioUpload = () => {
         <Typography variant="h6" gutterBottom>
           Загрузка аудиофайла
         </Typography>
-        
+
         {currentSettings && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Текущие настройки:
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip 
-                label={`Язык: ${currentSettings.language.toUpperCase()}`} 
-                size="small" 
+              <Chip
+                label={`Язык: ${currentSettings.language.toUpperCase()}`}
+                size="small"
                 variant="outlined"
               />
-              <Chip 
-                label={`Модель: ${currentSettings.model}`} 
-                size="small" 
+              <Chip label={`Модель: ${currentSettings.model}`} size="small" variant="outlined" />
+              <Chip
+                label={`Качество: ${currentSettings.quality}`}
+                size="small"
                 variant="outlined"
               />
-              <Chip 
-                label={`Качество: ${currentSettings.quality}`} 
-                size="small" 
-                variant="outlined"
-              />
-              <Chip 
-                label={`Формат: ${currentSettings.outputFormat.toUpperCase()}`} 
-                size="small" 
+              <Chip
+                label={`Формат: ${currentSettings.outputFormat.toUpperCase()}`}
+                size="small"
                 variant="outlined"
               />
             </Box>
           </Box>
         )}
-        
+
         <Box sx={{ mb: 2 }}>
           <input
             accept="audio/*"
@@ -116,12 +119,7 @@ const AudioUpload = () => {
             onChange={handleFileSelect}
           />
           <label htmlFor="audio-file-input">
-            <Button
-              variant="outlined"
-              component="span"
-              startIcon={<CloudUpload />}
-              sx={{ mb: 2 }}
-            >
+            <Button variant="outlined" component="span" startIcon={<CloudUpload />} sx={{ mb: 2 }}>
               Выбрать аудиофайл
             </Button>
           </label>
@@ -179,4 +177,4 @@ const AudioUpload = () => {
   );
 };
 
-export default AudioUpload; 
+export default AudioUpload;

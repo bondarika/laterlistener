@@ -9,25 +9,27 @@ import {
   TextField,
   Divider,
   IconButton,
-  Paper
+  Paper,
 } from '@mui/material';
-import {
-  ContentCopy,
-  Download,
-  Edit,
-  Save,
-  Cancel,
-  PlayArrow,
-  Pause
-} from '@mui/icons-material';
+import { ContentCopy, Download, Edit, Save, Cancel, PlayArrow, Pause } from '@mui/icons-material';
 
-const TranscriptionDisplay = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedText, setEditedText] = useState('');
-  const [isPlaying, setIsPlaying] = useState(false);
+interface TranscriptionData {
+  id: string;
+  fileName: string;
+  duration: string;
+  language: string;
+  confidence: number;
+  text: string;
+  timestamp: string;
+  status: string;
+}
 
-  // Пример данных транскрибуции
-  const transcriptionData = {
+const TranscriptionDisplay: React.FC = () => {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editedText, setEditedText] = useState<string>('');
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  const transcriptionData: TranscriptionData = {
     id: '1',
     fileName: 'audio_sample.mp3',
     duration: '2:34',
@@ -35,7 +37,7 @@ const TranscriptionDisplay = () => {
     confidence: 0.95,
     text: 'Привет! Это пример транскрибуции аудиофайла. Здесь будет отображаться текст, полученный из аудио.',
     timestamp: '2024-01-15 14:30:25',
-    status: 'completed'
+    status: 'completed',
   };
 
   const handleEdit = () => {
@@ -76,16 +78,14 @@ const TranscriptionDisplay = () => {
     <Card sx={{ mb: 3 }}>
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            Результат транскрибуции
-          </Typography>
+          <Typography variant="h6">Результат транскрибуции</Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Chip 
-              label={transcriptionData.status === 'completed' ? 'Завершено' : 'В процессе'} 
+            <Chip
+              label={transcriptionData.status === 'completed' ? 'Завершено' : 'В процессе'}
               color={transcriptionData.status === 'completed' ? 'success' : 'warning'}
               size="small"
             />
-            <Chip 
+            <Chip
               label={`${(transcriptionData.confidence * 100).toFixed(1)}% точность`}
               color="primary"
               size="small"
@@ -94,9 +94,12 @@ const TranscriptionDisplay = () => {
         </Box>
 
         <Paper sx={{ p: 2, mb: 2, backgroundColor: '#f8f9fa' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+          >
             <Typography variant="body2" color="text.secondary">
-              {transcriptionData.fileName} • {transcriptionData.duration} • {transcriptionData.language.toUpperCase()}
+              {transcriptionData.fileName} • {transcriptionData.duration} •{' '}
+              {transcriptionData.language.toUpperCase()}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {transcriptionData.timestamp}
@@ -129,31 +132,16 @@ const TranscriptionDisplay = () => {
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {isEditing ? (
             <>
-              <Button
-                startIcon={<Save />}
-                onClick={handleSave}
-                variant="contained"
-                size="small"
-              >
+              <Button startIcon={<Save />} onClick={handleSave} variant="contained" size="small">
                 Сохранить
               </Button>
-              <Button
-                startIcon={<Cancel />}
-                onClick={handleCancel}
-                variant="outlined"
-                size="small"
-              >
+              <Button startIcon={<Cancel />} onClick={handleCancel} variant="outlined" size="small">
                 Отмена
               </Button>
             </>
           ) : (
             <>
-              <Button
-                startIcon={<Edit />}
-                onClick={handleEdit}
-                variant="outlined"
-                size="small"
-              >
+              <Button startIcon={<Edit />} onClick={handleEdit} variant="outlined" size="small">
                 Редактировать
               </Button>
               <Button
@@ -172,11 +160,7 @@ const TranscriptionDisplay = () => {
               >
                 Скачать
               </Button>
-              <IconButton
-                onClick={handlePlayPause}
-                color="primary"
-                size="small"
-              >
+              <IconButton onClick={handlePlayPause} color="primary" size="small">
                 {isPlaying ? <Pause /> : <PlayArrow />}
               </IconButton>
             </>
@@ -187,4 +171,4 @@ const TranscriptionDisplay = () => {
   );
 };
 
-export default TranscriptionDisplay; 
+export default TranscriptionDisplay;
