@@ -12,7 +12,7 @@ class AuthStore {
 
   async login(userData: UserData) {
     try {
-      await postUserData({ id: userData.id }); // токен кладётся в cookie
+      await postUserData(userData); // Pass the complete userData object
       // теперь делаем get-запрос, чтобы получить userId и убедиться, что авторизация прошла
       const user = await getUserData();
       this.userId = user.id;
