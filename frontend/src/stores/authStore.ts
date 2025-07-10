@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import { exchangeTokenForJWT, logoutUser } from '../services/api';
+import { exchangeTokenForJWT, logoutUser, refreshTokens } from '../services/api';
 
 class AuthStore {
   accessToken: string | null = null;
@@ -19,6 +19,21 @@ class AuthStore {
       return true;
     } catch (error) {
       console.error('Token exchange failed:', error);
+      this.logout();
+      return false;
+    }
+  }
+
+  async refreshTokens() {
+    if (!this.refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    try {
+      const tokens = await refreshTokens(this.refreshToken);
+      this.saveTokens(tokens.accessToken, tokens.refreshToken);
+      return true;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       this.logout();
       return false;
     }

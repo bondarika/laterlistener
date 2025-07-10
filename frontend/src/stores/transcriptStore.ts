@@ -7,6 +7,9 @@ import {
   getTranscriptSummary,
   downloadTranscript,
   uploadAudioFile,
+  startTranscribe,
+  getTranscribeStatus,
+  getTranscribeResult,
 } from '../services/api';
 
 class TranscriptStore {
@@ -17,8 +20,133 @@ class TranscriptStore {
   summaryLoading: boolean = false;
   summary: string | null = null;
 
+  // Новые поля для работы с транскрибацией
+  currentTaskId: string | null = null;
+  transcribeStatus: 'idle' | 'processing' | 'completed' | 'error' = 'idle';
+  transcribeProgress: number = 0;
+
   constructor() {
     makeAutoObservable(this);
+  }
+
+  // Новые методы для работы с транскрибацией
+  async startTranscribe(fileUrl: string, fileName: string) {
+    this.transcribeStatus = 'processing';
+    this.transcribeProgress = 0;
+    this.error = null;
+
+    try {
+      const response = await startTranscribe(fileUrl, fileName);
+      runInAction(() => {
+        this.currentTaskId = response.task_id || response.id;
+        this.transcribeStatus = 'processing';
+      });
+      return this.currentTaskId;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.transcribeStatus = 'error';
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Failed to start transcribe';
+        }
+      });
+      throw e;
+    }
+  }
+
+  async checkTranscribeStatus(taskId: string) {
+    try {
+      const response = await getTranscribeStatus(taskId);
+      runInAction(() => {
+        this.transcribeStatus = response.status || 'processing';
+        this.transcribeProgress = response.progress || 0;
+
+        if (response.status === 'completed') {
+          this.transcribeStatus = 'completed';
+        } else if (response.status === 'error') {
+          this.transcribeStatus = 'error';
+          this.error = response.error || 'Transcribe failed';
+        }
+      });
+      return response;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.transcribeStatus = 'error';
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Failed to check status';
+        }
+      });
+      throw e;
+    }
+  }
+
+  async getTranscribeResult(taskId: string) {
+    try {
+      const response = await getTranscribeResult(taskId);
+      runInAction(() => {
+        // Предполагаем, что результат содержит данные транскрипции
+        this.transcript = response;
+        this.transcribeStatus = 'completed';
+      });
+      return response;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.transcribeStatus = 'error';
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Failed to get result';
+        }
+      });
+      throw e;
+    }
+  }
+
+  // Метод для полного цикла транскрибации
+  async transcribeAudio(fileUrl: string, fileName: string) {
+    try {
+      const taskId = await this.startTranscribe(fileUrl, fileName);
+
+      if (!taskId) {
+        throw new Error('Failed to get task ID');
+      }
+
+      // Периодически проверяем статус
+      const checkStatus = async () => {
+        if (this.transcribeStatus === 'processing') {
+          await this.checkTranscribeStatus(taskId);
+          if (this.transcribeStatus === 'processing') {
+            setTimeout(checkStatus, 2000); // Проверяем каждые 2 секунды
+          }
+        }
+      };
+
+      checkStatus();
+
+      // Ждем завершения
+      while (this.transcribeStatus === 'processing') {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (this.transcribeStatus === 'completed') {
+        return await this.getTranscribeResult(taskId);
+      } else {
+        throw new Error(this.error || 'Transcribe failed');
+      }
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.transcribeStatus = 'error';
+        if (e instanceof Error) {
+          this.error = e.message;
+        } else {
+          this.error = 'Transcribe failed';
+        }
+      });
+      throw e;
+    }
   }
 
   async loadAll() {

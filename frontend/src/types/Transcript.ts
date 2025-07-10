@@ -27,4 +27,5 @@ export interface Summary {
 export interface UploadResponse {
   transcript_id: string;
   status: string;
+  file_url: string;
 }

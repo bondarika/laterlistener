@@ -56,11 +56,14 @@ const AudioUpload: React.FC<AudioUploadProps> = observer(({ onUploadComplete }) 
         });
       }, 200);
 
-      // Upload file using transcriptStore
-      await transcriptStore.uploadAudioFile(selectedFile);
+      // Step 1: Upload file to get URL
+      const uploadResponse = await transcriptStore.uploadAudioFile(selectedFile);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
+
+      // Step 2: Start transcribe with the file URL
+      await transcriptStore.transcribeAudio(uploadResponse.file_url, selectedFile.name);
 
       // Wait a bit to show completion
       setTimeout(() => {
@@ -157,13 +160,32 @@ const AudioUpload: React.FC<AudioUploadProps> = observer(({ onUploadComplete }) 
           </Box>
         )}
 
+        {transcriptStore.transcribeStatus === 'processing' && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              Транскрибация... {transcriptStore.transcribeProgress}%
+            </Typography>
+            <LinearProgress variant="determinate" value={transcriptStore.transcribeProgress} />
+          </Box>
+        )}
+
+        {transcriptStore.transcribeStatus === 'error' && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {transcriptStore.error || 'Ошибка транскрибации'}
+          </Alert>
+        )}
+
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={!selectedFile || uploading}
+          disabled={!selectedFile || uploading || transcriptStore.transcribeStatus === 'processing'}
           fullWidth
         >
-          {uploading ? 'Загрузка...' : 'Отправить на транскрибуцию'}
+          {uploading
+            ? 'Загрузка...'
+            : transcriptStore.transcribeStatus === 'processing'
+              ? 'Транскрибация...'
+              : 'Отправить на транскрибуцию'}
         </Button>
       </CardContent>
     </Card>

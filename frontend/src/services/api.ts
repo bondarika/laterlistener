@@ -15,7 +15,7 @@ const axiosInstance = axios.create({
 // Добавляем перехватчик для автоматической подстановки JWT
 axiosInstance.interceptors.request.use((config) => {
   // Не добавляем токен для обмена одноразового токена на JWT
-  if (config.url && config.url.includes('/auth/login')) {
+  if (config.url && (config.url.includes('/auth/login') || config.url.includes('/auth/one-time'))) {
     return config;
   }
   const accessToken = localStorage.getItem('accessToken');
@@ -25,6 +25,42 @@ axiosInstance.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Добавляем перехватчик ответов для автоматического обновления токенов
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          const { authStore } = await import('../stores/authStore');
+          const success = await authStore.refreshTokens();
+          if (success) {
+            // Повторяем оригинальный запрос с новым токеном
+            const newAccessToken = localStorage.getItem('accessToken');
+            if (newAccessToken) {
+              originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+              return axiosInstance(originalRequest);
+            }
+          }
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        // Если обновление токена не удалось, перенаправляем на логин
+        const { authStore } = await import('../stores/authStore');
+        authStore.logout();
+        window.location.href = '/login';
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export const postUserData = async (userData: UserData) => {
   try {
@@ -146,11 +182,75 @@ export const exchangeTokenForJWT = async (
   oneTimeToken: string,
 ): Promise<{ accessToken: string; refreshToken: string }> => {
   try {
-    const response = await axiosInstance.post('/auth/login', { token: oneTimeToken });
-    // Ожидается, что бэкенд вернет { accessToken, refreshToken }
-    return response.data;
+    const response = await axiosInstance.post(`/auth/one-time?token=${oneTimeToken}`);
+    // Согласно TokenPair схеме: { access_token, refresh_token, token_type }
+    return {
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token,
+    };
   } catch (error) {
     console.error('Error exchanging one-time token for JWT:', error);
+    throw error;
+  }
+};
+
+// API транскрибации согласно OpenAPI спецификации
+export const startTranscribe = async (fileUrl: string, fileName: string): Promise<any> => {
+  try {
+    const response = await axiosInstance.post('/transcribe', {
+      file_url: fileUrl,
+      file_name: fileName,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error starting transcribe:', error);
+    throw error;
+  }
+};
+
+export const getTranscribeStatus = async (taskId: string): Promise<any> => {
+  try {
+    const response = await axiosInstance.get(`/status/${taskId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting transcribe status:', error);
+    throw error;
+  }
+};
+
+export const getTranscribeResult = async (taskId: string): Promise<any> => {
+  try {
+    const response = await axiosInstance.get(`/result/${taskId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting transcribe result:', error);
+    throw error;
+  }
+};
+
+// Обновление токенов
+export const refreshTokens = async (
+  refreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string }> => {
+  try {
+    const response = await axiosInstance.post(`/auth/refresh?refresh_token=${refreshToken}`);
+    return {
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token,
+    };
+  } catch (error) {
+    console.error('Error refreshing tokens:', error);
+    throw error;
+  }
+};
+
+// Получение информации о пользователе
+export const getMe = async (): Promise<any> => {
+  try {
+    const response = await axiosInstance.get('/me');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting user info:', error);
     throw error;
   }
 };
