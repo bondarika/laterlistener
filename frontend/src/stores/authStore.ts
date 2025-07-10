@@ -1,43 +1,56 @@
 import { makeAutoObservable } from 'mobx';
-import { postUserData, getUserData, logoutUser } from '../services/api';
-import type { UserData } from '../types/UserData';
+import { exchangeTokenForJWT, logoutUser } from '../services/api';
 
 class AuthStore {
-  userId: string | null = null;
+  accessToken: string | null = null;
+  refreshToken: string | null = null;
   isAuthenticated: boolean = false;
 
   constructor() {
     makeAutoObservable(this);
+    this.loadTokens();
   }
 
-  async login(userData: UserData) {
+  async exchangeOneTimeTokenForJWT(oneTimeToken: string) {
     try {
-      await postUserData(userData); // Pass the complete userData object
-      // теперь делаем get-запрос, чтобы получить userId и убедиться, что авторизация прошла
-      const user = await getUserData();
-      this.userId = user.id;
+      const tokens = await exchangeTokenForJWT(oneTimeToken); // { accessToken, refreshToken }
+      this.saveTokens(tokens.accessToken, tokens.refreshToken);
       this.isAuthenticated = true;
+      return true;
     } catch (error) {
-      // ошибки потом норм сделать надо
-      console.error('Registration failed:', error);
+      console.error('Token exchange failed:', error);
+      this.logout();
+      return false;
     }
   }
 
-  async logout() {
-    await logoutUser();
-    this.userId = null;
-    this.isAuthenticated = false;
+  saveTokens(accessToken: string, refreshToken: string) {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    this.isAuthenticated = true;
   }
 
-  async checkAuth() {
-    try {
-      const user = await getUserData();
-      this.userId = user.id;
+  loadTokens() {
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (accessToken && refreshToken) {
+      this.accessToken = accessToken;
+      this.refreshToken = refreshToken;
       this.isAuthenticated = true;
-    } catch {
-      this.userId = null;
+    } else {
       this.isAuthenticated = false;
     }
+  }
+
+  logout() {
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.isAuthenticated = false;
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    logoutUser();
   }
 }
 

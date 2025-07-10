@@ -18,11 +18,29 @@ import { Add, History, TrendingUp, Storage, Download, Share } from '@mui/icons-m
 import { useNavigate } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { transcriptStore } from '../stores/transcriptStore';
+import { authStore } from '../stores/authStore';
 import AudioUpload from '../components/AudioUpload/AudioUpload';
 
 const Dashboard: React.FC = observer(() => {
   const [showUpload, setShowUpload] = useState<boolean>(false);
+  const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Проверяем наличие одноразового токена в URL
+    const params = new URLSearchParams(window.location.search);
+    const oneTimeToken = params.get('auth_token');
+    if (oneTimeToken) {
+      authStore.exchangeOneTimeTokenForJWT(oneTimeToken).then((success) => {
+        if (success) {
+          setLoginSuccess(true);
+          // Убираем токен из URL
+          params.delete('auth_token');
+          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     // Load transcripts when component mounts
@@ -65,6 +83,19 @@ const Dashboard: React.FC = observer(() => {
     totalDuration: transcriptStore.transcripts.length * 5, // Mock duration calculation
     accuracy: 0.94, // Mock accuracy
   };
+
+  if (loginSuccess) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="success" sx={{ mb: 3 }}>
+          Успешный вход! Теперь вы можете пользоваться сервисом.
+        </Alert>
+        <Button variant="outlined" onClick={() => (window.location.href = '/dashboard')}>
+          Перейти к дашборду
+        </Button>
+      </Container>
+    );
+  }
 
   if (showUpload) {
     return (

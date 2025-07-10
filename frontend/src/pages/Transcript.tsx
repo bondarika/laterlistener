@@ -20,6 +20,7 @@ import { ArrowBack, Edit, Save, Cancel, ContentCopy, Download, Share } from '@mu
 import { useParams, useNavigate } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { transcriptStore } from '../stores/transcriptStore';
+import { authStore } from '../stores/authStore';
 
 const Transcript: React.FC = observer(() => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,7 @@ const Transcript: React.FC = observer(() => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedText, setEditedText] = useState<string>('');
   const [currentTab, setCurrentTab] = useState<string>('transcript');
+  const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
 
   const loadTranscription = useCallback(async () => {
     if (!id) return;
@@ -41,6 +43,22 @@ const Transcript: React.FC = observer(() => {
   useEffect(() => {
     loadTranscription();
   }, [id, loadTranscription]);
+
+  useEffect(() => {
+    // Проверяем наличие одноразового токена в URL
+    const params = new URLSearchParams(window.location.search);
+    const oneTimeToken = params.get('auth_token');
+    if (oneTimeToken) {
+      authStore.exchangeOneTimeTokenForJWT(oneTimeToken).then((success) => {
+        if (success) {
+          setLoginSuccess(true);
+          // Убираем токен из URL
+          params.delete('auth_token');
+          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        }
+      });
+    }
+  }, []);
 
   const handleEdit = () => {
     if (transcriptStore.transcript) {
@@ -115,6 +133,19 @@ const Transcript: React.FC = observer(() => {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress size={60} />
         </Box>
+      </Container>
+    );
+  }
+
+  if (loginSuccess) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="success" sx={{ mb: 3 }}>
+          Успешный вход! Теперь вы можете пользоваться сервисом.
+        </Alert>
+        <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/dashboard')}>
+          Перейти к дашборду
+        </Button>
       </Container>
     );
   }

@@ -12,6 +12,20 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+// Добавляем перехватчик для автоматической подстановки JWT
+axiosInstance.interceptors.request.use((config) => {
+  // Не добавляем токен для обмена одноразового токена на JWT
+  if (config.url && config.url.includes('/auth/login')) {
+    return config;
+  }
+  const accessToken = localStorage.getItem('accessToken');
+  if (accessToken) {
+    config.headers = config.headers || {};
+    config.headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+  return config;
+});
+
 export const postUserData = async (userData: UserData) => {
   try {
     const response = await axiosInstance.post('/auth/register', {
@@ -123,6 +137,20 @@ export const uploadAudioFile = async (file: File): Promise<UploadResponse> => {
     return response.data;
   } catch (error) {
     console.error('Error uploading audio file:', error);
+    throw error;
+  }
+};
+
+// Обмен одноразового токена на JWT
+export const exchangeTokenForJWT = async (
+  oneTimeToken: string,
+): Promise<{ accessToken: string; refreshToken: string }> => {
+  try {
+    const response = await axiosInstance.post('/auth/login', { token: oneTimeToken });
+    // Ожидается, что бэкенд вернет { accessToken, refreshToken }
+    return response.data;
+  } catch (error) {
+    console.error('Error exchanging one-time token for JWT:', error);
     throw error;
   }
 };

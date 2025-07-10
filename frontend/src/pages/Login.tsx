@@ -4,77 +4,62 @@ import { Telegram, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { authStore } from '../stores/authStore';
-import WebApp from '@twa-dev/sdk';
 
 type Status = 'waiting' | 'loading' | 'success' | 'error';
 
 const Login: React.FC = observer(() => {
-  const params = new URLSearchParams(WebApp.initData);
-  const userData = JSON.parse(params.get('user') || 'null');
+  // const params = new URLSearchParams(WebApp.initData);
+  // const userData = JSON.parse(params.get('user') || 'null');
   const [status, setStatus] = useState<Status>('waiting');
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
+  const [loginByToken, setLoginByToken] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      setStatus('loading');
-      await authStore.checkAuth();
-
-      if (authStore.isAuthenticated) {
-        setStatus('success');
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
-      } else {
-        setStatus('waiting');
-      }
-    } catch (error) {
-      setStatus('waiting');
-      console.error('Auth check failed:', error);
-    }
-  };
-
-  const handleTelegramLogin = async () => {
-    try {
-      setStatus('loading');
-      setError('');
-
-      // Check if we're in Telegram Web App
-      if (WebApp) {
-        // Use Telegram Web App API
-        WebApp.ready();
-        WebApp.expand();
-
-        if (userData) {
-          // Login with Telegram user data
-          await authStore.login({
-            id: userData.id,
-            telegram_id: userData.id,
-            created_at: new Date().toISOString(),
-          });
-
-          setStatus('success');
+    // Проверяем наличие одноразового токена в URL
+    const params = new URLSearchParams(window.location.search);
+    const oneTimeToken = params.get('auth_token');
+    if (oneTimeToken) {
+      authStore.exchangeOneTimeTokenForJWT(oneTimeToken).then((success) => {
+        if (success) {
+          setLoginByToken(true);
+          // Убираем токен из URL
+          params.delete('auth_token');
+          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
           setTimeout(() => {
             navigate('/dashboard');
           }, 1500);
-        } else {
-          throw new Error('Не удалось получить данные пользователя из Telegram');
         }
-      } else {
-        // Fallback for regular browser - redirect to Telegram
-        window.open('https://t.me/your_bot_username', '_blank');
-        setError('Откройте приложение в Telegram для авторизации');
-      }
-    } catch (error) {
-      setStatus('error');
-      setError(error instanceof Error ? error.message : 'Ошибка авторизации');
-      console.error('Login error:', error);
+      });
     }
+  }, []);
+
+  // useEffect(() => {
+  //   // checkAuth();
+  // }, []);
+
+  // const checkAuth = async () => {
+  //   try {
+  //     setStatus('loading');
+  //     await authStore.checkAuth();
+
+  //     if (authStore.isAuthenticated) {
+  //       setStatus('success');
+  //       setTimeout(() => {
+  //         navigate('/dashboard');
+  //       }, 1500);
+  //     } else {
+  //       setStatus('waiting');
+  //     }
+  //   } catch (error) {
+  //     setStatus('waiting');
+  //     console.error('Auth check failed:', error);
+  //   }
+  // };
+
+  const handleTelegramLogin = async () => {
+    setError('Авторизация через Telegram больше не поддерживается. Используйте ссылку с токеном.');
+    setStatus('error');
   };
 
   const renderContent = () => {
@@ -111,7 +96,7 @@ const Login: React.FC = observer(() => {
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
-            <Button variant="contained" onClick={checkAuth} size="large">
+            <Button variant="contained" onClick={handleTelegramLogin} size="large">
               Попробовать снова
             </Button>
           </Box>
@@ -145,6 +130,24 @@ const Login: React.FC = observer(() => {
         );
     }
   };
+
+  if (loginByToken) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CheckCircle sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              Успешный вход! Теперь вы можете пользоваться сервисом.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Перенаправляем на главную страницу...
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
