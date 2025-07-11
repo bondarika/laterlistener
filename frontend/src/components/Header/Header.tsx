@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Button, Avatar } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, Button } from '@mui/material';
 import { Mic, Headphones, Logout } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
@@ -11,7 +11,7 @@ const Header: React.FC = observer(() => {
   const handleLogout = async () => {
     try {
       await authStore.logout();
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -38,12 +38,6 @@ const Header: React.FC = observer(() => {
 
         {authStore.isAuthenticated ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Пользователь #{authStore.userId}
-            </Typography>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-              {authStore.userId?.charAt(0) || 'U'}
-            </Avatar>
             <Button color="inherit" startIcon={<Logout />} onClick={handleLogout} size="small">
               Выйти
             </Button>

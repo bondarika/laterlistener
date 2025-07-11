@@ -9,7 +9,7 @@ import {
   Alert,
   Paper,
 } from '@mui/material';
-import { CloudUpload, AudioFile, PlayArrow } from '@mui/icons-material';
+import { CloudUpload, AudioFile } from '@mui/icons-material';
 import { observer } from 'mobx-react-lite';
 import { transcriptStore } from '../../stores/transcriptStore';
 
@@ -84,13 +84,6 @@ const AudioUpload: React.FC<AudioUploadProps> = observer(({ onUploadComplete }) 
     }
   };
 
-  const handlePlayPreview = () => {
-    if (selectedFile) {
-      const audio = new Audio(URL.createObjectURL(selectedFile));
-      audio.play();
-    }
-  };
-
   return (
     <Card sx={{ mb: 3 }}>
       <CardContent>
@@ -132,15 +125,6 @@ const AudioUpload: React.FC<AudioUploadProps> = observer(({ onUploadComplete }) 
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </Typography>
               </Box>
-              <Button
-                startIcon={<PlayArrow />}
-                onClick={handlePlayPreview}
-                variant="outlined"
-                size="small"
-                disabled={uploading}
-              >
-                Прослушать
-              </Button>
             </Box>
           </Paper>
         )}

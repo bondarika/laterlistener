@@ -8,8 +8,6 @@ import { authStore } from '../stores/authStore';
 type Status = 'waiting' | 'loading' | 'success' | 'error';
 
 const Login: React.FC = observer(() => {
-  // const params = new URLSearchParams(WebApp.initData);
-  // const userData = JSON.parse(params.get('user') || 'null');
   const [status] = useState<Status>('waiting');
   const [error] = useState<string>('');
   const navigate = useNavigate();
