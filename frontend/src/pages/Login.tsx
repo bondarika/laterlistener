@@ -10,15 +10,15 @@ type Status = 'waiting' | 'loading' | 'success' | 'error';
 const Login: React.FC = observer(() => {
   // const params = new URLSearchParams(WebApp.initData);
   // const userData = JSON.parse(params.get('user') || 'null');
-  const [status, setStatus] = useState<Status>('waiting');
-  const [error, setError] = useState<string>('');
+  const [status] = useState<Status>('waiting');
+  const [error] = useState<string>('');
   const navigate = useNavigate();
   const [loginByToken, setLoginByToken] = useState<boolean>(false);
 
   useEffect(() => {
     // Проверяем наличие одноразового токена в URL
     const params = new URLSearchParams(window.location.search);
-    const oneTimeToken = params.get('auth_token');
+    const oneTimeToken = params.get('auth_token') || params.get('token');
     if (oneTimeToken) {
       authStore.exchangeOneTimeTokenForJWT(oneTimeToken).then((success) => {
         if (success) {
@@ -58,8 +58,8 @@ const Login: React.FC = observer(() => {
   // };
 
   const handleTelegramLogin = async () => {
-    setError('Авторизация через Telegram больше не поддерживается. Используйте ссылку с токеном.');
-    setStatus('error');
+    // Замените на ваш username бота
+    window.location.href = 'https://t.me/laterlistener_bot';
   };
 
   const renderContent = () => {
@@ -110,7 +110,7 @@ const Login: React.FC = observer(() => {
               Добро пожаловать!
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-              Для доступа к транскрибуции аудио необходимо авторизоваться через Telegram
+              Для доступа к транскрибуции аудио необходимо авторизоваться через Telegram-бота
             </Typography>
 
             <Button

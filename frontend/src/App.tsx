@@ -24,7 +24,7 @@ const theme = createTheme({
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = observer(({ children }) => {
   if (!authStore.isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 });
@@ -36,7 +36,7 @@ const App = observer(() => {
       <Router>
         <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Login />} />
             <Route
               path="/dashboard"
               element={
@@ -67,7 +67,7 @@ const App = observer(() => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Remove redirect to /login, now root is login */}
           </Routes>
         </Box>
       </Router>

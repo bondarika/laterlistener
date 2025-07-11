@@ -2,7 +2,7 @@
 import type { UserData } from '../types/UserData';
 import type { Transcript, TranscriptUpdate, Summary, UploadResponse } from '../types/Transcript';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -194,8 +194,23 @@ export const exchangeTokenForJWT = async (
   }
 };
 
+// Types for transcribe API
+export interface TranscribeStatus {
+  status: 'idle' | 'processing' | 'completed' | 'error';
+  progress: number;
+  error?: string;
+}
+
+export interface StartTranscribeResponse {
+  task_id: string;
+  status: 'processing' | 'queued';
+}
+
 // API транскрибации согласно OpenAPI спецификации
-export const startTranscribe = async (fileUrl: string, fileName: string): Promise<any> => {
+export const startTranscribe = async (
+  fileUrl: string,
+  fileName: string,
+): Promise<StartTranscribeResponse> => {
   try {
     const response = await axiosInstance.post('/transcribe', {
       file_url: fileUrl,
@@ -208,7 +223,7 @@ export const startTranscribe = async (fileUrl: string, fileName: string): Promis
   }
 };
 
-export const getTranscribeStatus = async (taskId: string): Promise<any> => {
+export const getTranscribeStatus = async (taskId: string): Promise<TranscribeStatus> => {
   try {
     const response = await axiosInstance.get(`/status/${taskId}`);
     return response.data;
@@ -218,7 +233,7 @@ export const getTranscribeStatus = async (taskId: string): Promise<any> => {
   }
 };
 
-export const getTranscribeResult = async (taskId: string): Promise<any> => {
+export const getTranscribeResult = async (taskId: string): Promise<Transcript> => {
   try {
     const response = await axiosInstance.get(`/result/${taskId}`);
     return response.data;
@@ -245,7 +260,7 @@ export const refreshTokens = async (
 };
 
 // Получение информации о пользователе
-export const getMe = async (): Promise<any> => {
+export const getMe = async (): Promise<UserData> => {
   try {
     const response = await axiosInstance.get('/me');
     return response.data;
