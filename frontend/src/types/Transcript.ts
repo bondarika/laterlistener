@@ -29,3 +29,22 @@ export interface UploadResponse {
   status: string;
   file_url: string;
 }
+
+// Интерфейс для ответа /api/transcripts/:id
+export interface TranscriptApiResponse {
+  id: string;
+  telegram_id: number;
+  file_name: string;
+  file_url: string;
+  result_url: string;
+  status: string; // например, 'FINISHED'
+}
+
+// Интерфейс для расшифрованного JSON (примерная структура)
+export interface TranscriptResult {
+  // Добавьте реальные поля из JSON-файла, например:
+  // text: string;
+  // blocks: TranscriptBlock[];
+  // speakers: string[];
+  // ...
+}

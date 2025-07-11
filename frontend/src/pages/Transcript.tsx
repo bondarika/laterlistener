@@ -21,6 +21,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { transcriptStore } from '../stores/transcriptStore';
 import { authStore } from '../stores/authStore';
+import { useState as useReactState } from 'react';
+import { fetchTranscriptResultJson } from '../services/api';
+import type { TranscriptResult } from '../types/Transcript';
 
 const Transcript: React.FC = observer(() => {
   const { id } = useParams<{ id: string }>();
@@ -30,11 +33,32 @@ const Transcript: React.FC = observer(() => {
   const [currentTab, setCurrentTab] = useState<string>('transcript');
   const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
 
+  // State for transcript JSON
+  const [jsonLoading, setJsonLoading] = useReactState(false);
+  const [jsonError, setJsonError] = useReactState<string | null>(null);
+  const [jsonData, setJsonData] = useReactState<TranscriptResult | null>(null);
+
   const loadTranscription = useCallback(async () => {
     if (!id) return;
 
     try {
       await transcriptStore.loadById(id);
+      // После загрузки основной транскрипции, если есть result_url, грузим JSON
+      const t = transcriptStore.transcript as any;
+      if (t && t.result_url) {
+        setJsonLoading(true);
+        setJsonError(null);
+        try {
+          const data = await fetchTranscriptResultJson(t.result_url);
+          setJsonData(data);
+        } catch (err) {
+          setJsonError('Ошибка загрузки содержимого транскрипции');
+        } finally {
+          setJsonLoading(false);
+        }
+      } else {
+        setJsonData(null);
+      }
     } catch (error) {
       console.error('Failed to load transcript:', error);
     }
@@ -168,6 +192,118 @@ const Transcript: React.FC = observer(() => {
 
   const transcript = transcriptStore.transcript;
 
+  // Вкладка "Транскрипция": показываем содержимое JSON, если оно есть
+  const renderTranscriptContent = () => {
+    if (jsonLoading) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+    if (jsonError) {
+      return (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {jsonError}
+        </Alert>
+      );
+    }
+    if (jsonData) {
+      // Новый формат: массив сегментов
+      if (
+        Array.isArray(jsonData) &&
+        jsonData.length > 0 &&
+        jsonData[0].start !== undefined &&
+        jsonData[0].end !== undefined &&
+        jsonData[0].speaker !== undefined &&
+        jsonData[0].word !== undefined
+      ) {
+        return (
+          <Box sx={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ borderBottom: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>
+                    Время начала
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>
+                    Время конца
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>
+                    Спикер
+                  </th>
+                  <th style={{ borderBottom: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>
+                    Текст
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {jsonData.map((seg: any, idx: number) => (
+                  <tr key={idx}>
+                    <td
+                      style={{
+                        borderBottom: '1px solid #eee',
+                        padding: '8px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {seg.start.toFixed(2)}
+                    </td>
+                    <td
+                      style={{
+                        borderBottom: '1px solid #eee',
+                        padding: '8px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {seg.end.toFixed(2)}
+                    </td>
+                    <td style={{ borderBottom: '1px solid #eee', padding: '8px' }}>
+                      {seg.speaker}
+                    </td>
+                    <td style={{ borderBottom: '1px solid #eee', padding: '8px' }}>{seg.word}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Box>
+        );
+      }
+      // Старое поведение для text/blocks
+      if ((jsonData as any).text) {
+        return (
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+            {(jsonData as any).text}
+          </Typography>
+        );
+      }
+      if ((jsonData as any).blocks && Array.isArray((jsonData as any).blocks)) {
+        return (
+          <Box>
+            {(jsonData as any).blocks.map((block: any, idx: number) => (
+              <Box key={block.id || idx} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {block.speaker ? `${block.speaker}:` : ''}{' '}
+                  {block.start != null ? `[${block.start} - ${block.end}]` : ''}
+                </Typography>
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {block.text}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        );
+      }
+      return <Typography color="text.secondary">Нет данных для отображения</Typography>;
+    }
+    // Если нет JSON — fallback на старое поведение
+    return (
+      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+        {transcript.text}
+      </Typography>
+    );
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 3 }}>
@@ -284,9 +420,7 @@ const Transcript: React.FC = observer(() => {
               />
             ) : (
               <Paper sx={{ p: 3, backgroundColor: '#fafafa', minHeight: 200 }}>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {transcript.text}
-                </Typography>
+                {renderTranscriptContent()}
               </Paper>
             ))}
 

@@ -1,6 +1,7 @@
 ﻿import axios from 'axios';
 import type { UserData } from '../types/UserData';
 import type { Transcript, TranscriptUpdate, Summary, UploadResponse } from '../types/Transcript';
+import type { TranscriptResult } from '../types/Transcript';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
@@ -118,6 +119,7 @@ export const getAllTranscripts = async (): Promise<Transcript[]> => {
 export const getTranscriptById = async (id: string): Promise<Transcript> => {
   try {
     const response = await axiosInstance.get(`/api/transcripts/${id}`);
+    console.log('[API] /api/transcripts/:id response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching transcript:', error);
@@ -241,6 +243,15 @@ export const getTranscribeResult = async (taskId: string): Promise<Transcript> =
     console.error('Error getting transcribe result:', error);
     throw error;
   }
+};
+
+// Получить JSON-результат расшифровки по result_url
+export const fetchTranscriptResultJson = async (resultUrl: string): Promise<TranscriptResult> => {
+  const response = await fetch(resultUrl);
+  if (!response.ok) {
+    throw new Error('Ошибка загрузки результата транскрипции');
+  }
+  return response.json();
 };
 
 // Обновление токенов
