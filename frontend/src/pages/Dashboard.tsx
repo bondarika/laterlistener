@@ -11,93 +11,41 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-  Fab,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
-import {
-  Add,
-  History,
-  TrendingUp,
-  Storage,
-  PlayArrow,
-  Download,
-  Share,
-  Settings as SettingsIcon,
-} from '@mui/icons-material';
+import { Add, History, TrendingUp, Storage, Download, Share } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
+import { transcriptStore } from '../stores/transcriptStore';
+import { authStore } from '../stores/authStore';
 import AudioUpload from '../components/AudioUpload/AudioUpload';
-import Settings from '../components/Settings/Settings';
 
-interface DashboardProps {
-  onPlayAudio: (audio: { fileName: string; duration: number; id: string }) => void;
-}
-
-interface Transcription {
-  id: string;
-  fileName: string;
-  duration: string;
-  status: string;
-  accuracy: number | null;
-  timestamp: string;
-}
-
-interface Stats {
-  totalFiles: number;
-  totalDuration: number;
-  accuracy: number;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
-  const [recentTranscriptions, setRecentTranscriptions] = useState<Transcription[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    totalFiles: 0,
-    totalDuration: 0,
-    accuracy: 0,
-  });
+const Dashboard: React.FC = observer(() => {
   const [showUpload, setShowUpload] = useState<boolean>(false);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Загружаем данные при монтировании компонента
-    loadDashboardData();
+    // Проверяем наличие одноразового токена в URL
+    const params = new URLSearchParams(window.location.search);
+    const oneTimeToken = params.get('auth_token');
+    if (oneTimeToken) {
+      authStore.exchangeOneTimeTokenForJWT(oneTimeToken).then((success) => {
+        if (success) {
+          setLoginSuccess(true);
+          // Убираем токен из URL
+          params.delete('auth_token');
+          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        }
+      });
+    }
   }, []);
 
-  const loadDashboardData = async () => {
-    // Здесь будет загрузка данных с сервера
-    // Пока используем моковые данные
-    setRecentTranscriptions([
-      {
-        id: '1',
-        fileName: 'meeting_audio.mp3',
-        duration: '15:30',
-        status: 'completed',
-        accuracy: 0.95,
-        timestamp: '2024-01-15 14:30:25',
-      },
-      {
-        id: '2',
-        fileName: 'interview.wav',
-        duration: '8:45',
-        status: 'processing',
-        accuracy: null,
-        timestamp: '2024-01-15 13:15:10',
-      },
-      {
-        id: '3',
-        fileName: 'lecture.m4a',
-        duration: '45:20',
-        status: 'completed',
-        accuracy: 0.92,
-        timestamp: '2024-01-14 16:45:30',
-      },
-    ]);
-
-    setStats({
-      totalFiles: 15,
-      totalDuration: 180, // в минутах
-      accuracy: 0.94,
-    });
-  };
+  useEffect(() => {
+    // Load transcripts when component mounts
+    transcriptStore.loadAll();
+  }, []);
 
   const handleNewTranscription = () => {
     setShowUpload(true);
@@ -107,47 +55,47 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
     navigate(`/transcript/${id}`);
   };
 
-  const handlePlayAudio = (item: Transcription) => {
-    // Конвертируем время из формата "15:30" в секунды
-    const timeParts = item.duration.split(':');
-    const durationInSeconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
-
-    onPlayAudio({
-      fileName: item.fileName,
-      duration: durationInSeconds,
-      id: item.id,
-    });
-  };
-
   const handleShareTranscription = (id: string) => {
     navigate(`/share/${id}`);
   };
 
-  const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'processing':
-        return 'warning';
-      case 'error':
-        return 'error';
-      default:
-        return 'default';
+  const handleDownload = async (id: string) => {
+    try {
+      const blob = await transcriptStore.downloadTranscriptFile('txt');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcript_${id}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
     }
   };
 
-  const getStatusText = (status: string): string => {
-    switch (status) {
-      case 'completed':
-        return 'Завершено';
-      case 'processing':
-        return 'Обработка';
-      case 'error':
-        return 'Ошибка';
-      default:
-        return 'Неизвестно';
-    }
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('ru-RU');
   };
+
+  // Calculate stats from real data
+  const stats = {
+    totalFiles: transcriptStore.transcripts.length,
+    totalDuration: transcriptStore.transcripts.length * 5, // Mock duration calculation
+    accuracy: 0.94, // Mock accuracy
+  };
+
+  if (loginSuccess) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="success" sx={{ mb: 3 }}>
+          Успешный вход! Теперь вы можете пользоваться сервисом.
+        </Alert>
+        <Button variant="outlined" onClick={() => (window.location.href = '/dashboard')}>
+          Перейти к дашборду
+        </Button>
+      </Container>
+    );
+  }
 
   if (showUpload) {
     return (
@@ -157,27 +105,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
             ← Назад к дашборду
           </Button>
         </Box>
-        <AudioUpload />
-      </Container>
-    );
-  }
-
-  if (showSettings) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ mb: 3 }}>
-          <Button variant="outlined" onClick={() => setShowSettings(false)} sx={{ mb: 2 }}>
-            ← Назад к дашборду
-          </Button>
-        </Box>
-        <Settings />
+        <AudioUpload
+          onUploadComplete={() => {
+            setShowUpload(false);
+            transcriptStore.loadAll(); // Reload transcripts after upload
+          }}
+        />
       </Container>
     );
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Заголовок */}
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Панель управления
@@ -187,7 +127,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
         </Typography>
       </Box>
 
-      {/* Статистика */}
+      {/* Error display */}
+      {transcriptStore.error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {transcriptStore.error}
+        </Alert>
+      )}
+
+      {/* Statistics */}
       <Box
         sx={{
           display: 'grid',
@@ -245,7 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
         </Card>
       </Box>
 
-      {/* Последние транскрипции */}
+      {/* Recent transcriptions */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Box
@@ -257,63 +204,69 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
             </Button>
           </Box>
 
-          <List>
-            {recentTranscriptions.map((item) => (
-              <ListItem
-                key={item.id}
-                divider
-                secondaryAction={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Chip
-                      label={getStatusText(item.status)}
-                      color={getStatusColor(item.status)}
-                      size="small"
-                    />
-                    <IconButton size="small" onClick={() => handlePlayAudio(item)}>
-                      <PlayArrow />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleShareTranscription(item.id)}>
-                      <Share />
-                    </IconButton>
-                    <IconButton size="small">
-                      <Download />
-                    </IconButton>
-                  </Box>
-                }
-              >
-                <ListItemText
-                  primary={
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        cursor: 'pointer',
-                        '&:hover': { color: 'primary.main' },
-                      }}
-                      onClick={() => handleViewTranscription(item.id)}
-                    >
-                      {item.fileName}
-                    </Typography>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {item.duration} • {item.timestamp}
-                      </Typography>
-                      {item.accuracy && (
-                        <Typography variant="body2" color="text.secondary">
-                          Точность: {Math.round(item.accuracy * 100)}%
-                        </Typography>
-                      )}
+          {transcriptStore.loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : transcriptStore.transcripts.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                У вас пока нет транскрипций. Создайте первую!
+              </Typography>
+            </Box>
+          ) : (
+            <List>
+              {transcriptStore.transcripts.map((transcript) => (
+                <ListItem
+                  key={transcript.id}
+                  divider
+                  secondaryAction={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip label="Завершено" color="success" size="small" />
+                      <IconButton
+                        size="small"
+                        onClick={() => handleShareTranscription(transcript.id)}
+                      >
+                        <Share />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleDownload(transcript.id)}>
+                        <Download />
+                      </IconButton>
                     </Box>
                   }
-                />
-              </ListItem>
-            ))}
-          </List>
+                >
+                  <ListItemText
+                    primary={
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          cursor: 'pointer',
+                          '&:hover': { color: 'primary.main' },
+                        }}
+                        onClick={() => handleViewTranscription(transcript.id)}
+                      >
+                        Транскрипция #{transcript.id}
+                      </Typography>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Создано: {formatDate(transcript.created_at)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Обновлено: {formatDate(transcript.updated_at)}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
         </CardContent>
       </Card>
 
-      {/* Быстрые действия */}
+      {/* Quick actions */}
       <Box
         sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}
       >
@@ -333,24 +286,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlayAudio }) => {
           variant="outlined"
           size="large"
           startIcon={<History />}
-          onClick={() => navigate('/history')}
+          onClick={() => navigate('/dashboard')}
           sx={{ py: 2 }}
         >
           История транскрипций
         </Button>
       </Box>
-
-      {/* Плавающая кнопка для настроек */}
-      <Fab
-        color="primary"
-        aria-label="settings"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => setShowSettings(true)}
-      >
-        <SettingsIcon />
-      </Fab>
     </Container>
   );
-};
+});
 
 export default Dashboard;

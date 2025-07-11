@@ -15,46 +15,23 @@ import {
 } from '@mui/material';
 import { Share as ShareIcon, ContentCopy, Download } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
+import { transcriptStore } from '../stores/transcriptStore';
 
-interface Transcription {
-  id: string;
-  fileName: string;
-  duration: string;
-  text: string;
-  timestamp: string;
-  status: string;
-}
-
-const Share: React.FC = () => {
+const Share: React.FC = observer(() => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [transcription, setTranscription] = useState<Transcription | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
   const [shareUrl, setShareUrl] = useState<string>('');
   const [showSnackbar, setShowSnackbar] = useState<boolean>(false);
 
   const loadTranscription = useCallback(async () => {
+    if (!id) return;
+
     try {
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setTranscription({
-        id: id,
-        fileName: 'meeting_audio.mp3',
-        duration: '15:30',
-        text: '\u041f\u0440\u0438\u0432\u0435\u0442! \u042d\u0442\u043e \u043f\u0440\u0438\u043c\u0435\u0440 \u0442\u0440\u0430\u043d\u0441\u043a\u0440\u0438\u0431\u0443\u0446\u0438\u0438 \u0430\u0443\u0434\u0438\u043e\u0444\u0430\u0439\u043b\u0430.',
-        timestamp: '2024-01-15 14:30:25',
-        status: 'completed',
-      });
-
+      await transcriptStore.loadById(id);
       setShareUrl(`${window.location.origin}/share/${id}`);
-    } catch {
-      setError(
-        '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0442\u0440\u0430\u043d\u0441\u043a\u0440\u0438\u043f\u0446\u0438\u0438',
-      );
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Failed to load transcript:', error);
     }
   }, [id]);
 
@@ -67,17 +44,27 @@ const Share: React.FC = () => {
     setShowSnackbar(true);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([transcription.text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${transcription.fileName}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownload = async () => {
+    if (!transcriptStore.transcript) return;
+
+    try {
+      const blob = await transcriptStore.downloadTranscriptFile('txt');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcript_${transcriptStore.transcript.id}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
   };
 
-  if (loading) {
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('ru-RU');
+  };
+
+  if (transcriptStore.loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -87,11 +74,11 @@ const Share: React.FC = () => {
     );
   }
 
-  if (error || !transcription) {
+  if (transcriptStore.error || !transcriptStore.transcript) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          {error || 'Транскрипция не найдена'}
+          {transcriptStore.error || 'Транскрипция не найдена'}
         </Alert>
         <Button variant="outlined" onClick={() => navigate('/dashboard')}>
           Вернуться к дашборду
@@ -99,6 +86,8 @@ const Share: React.FC = () => {
       </Container>
     );
   }
+
+  const transcript = transcriptStore.transcript;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -119,22 +108,18 @@ const Share: React.FC = () => {
 
           <Box sx={{ mb: 2 }}>
             <Typography variant="body1" fontWeight="medium">
-              {transcription.fileName}
+              Транскрипция #{transcript.id}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Длительность: {transcription.duration}
+              Создано: {formatDate(transcript.created_at)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Создано: {transcription.timestamp}
+              Обновлено: {formatDate(transcript.updated_at)}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <Chip
-              label={transcription.status === 'completed' ? 'Завершено' : 'В процессе'}
-              color={transcription.status === 'completed' ? 'success' : 'warning'}
-              size="small"
-            />
+            <Chip label="Завершено" color="success" size="small" />
           </Box>
 
           <Button variant="outlined" startIcon={<Download />} onClick={handleDownload} fullWidth>
@@ -178,6 +163,6 @@ const Share: React.FC = () => {
       />
     </Container>
   );
-};
+});
 
 export default Share;
