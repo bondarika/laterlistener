@@ -160,7 +160,14 @@ class TranscriptStore {
       });
     } catch (e: unknown) {
       runInAction(() => {
-        if (e instanceof Error) {
+        const maybeAxiosError = e as { response?: { status?: number }; message?: string };
+        if (
+          maybeAxiosError.response?.status === 404 ||
+          (maybeAxiosError.message &&
+            maybeAxiosError.message.includes('Request failed with status code 404'))
+        ) {
+          this.error = 'Что-то пошло не так';
+        } else if (e instanceof Error) {
           this.error = e.message;
         } else {
           this.error = 'Unknown error';
@@ -181,7 +188,11 @@ class TranscriptStore {
       });
     } catch (e: unknown) {
       runInAction(() => {
-        if (e instanceof Error) {
+        // Проверяем, есть ли у ошибки поле response и статус 404
+        const maybeAxiosError = e as { response?: { status?: number } };
+        if (maybeAxiosError.response?.status === 404) {
+          this.error = 'Что-то пошло не так';
+        } else if (e instanceof Error) {
           this.error = e.message;
         } else {
           this.error = 'Unknown error';

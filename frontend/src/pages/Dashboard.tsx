@@ -81,7 +81,6 @@ const Dashboard: React.FC = observer(() => {
   const stats = {
     totalFiles: transcriptStore.transcripts.length,
     totalDuration: transcriptStore.transcripts.length * 5, // Mock duration calculation
-    accuracy: 0.94, // Mock accuracy
   };
 
   if (loginSuccess) {
@@ -169,22 +168,6 @@ const Dashboard: React.FC = observer(() => {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Общая длительность
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <History sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
-              <Box>
-                <Typography variant="h4" component="div">
-                  {Math.round(stats.accuracy * 100)}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Средняя точность
                 </Typography>
               </Box>
             </Box>

@@ -154,7 +154,10 @@ const Transcript: React.FC = observer(() => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          {transcriptStore.error || 'Транскрипция не найдена'}
+          {transcriptStore.error &&
+          transcriptStore.error.includes('Request failed with status code 404')
+            ? 'Что-то пошло не так'
+            : transcriptStore.error || 'Транскрипция не найдена'}
         </Alert>
         <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/dashboard')}>
           Вернуться к дашборду

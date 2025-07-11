@@ -8,8 +8,8 @@ import { authStore } from '../stores/authStore';
 type Status = 'waiting' | 'loading' | 'success' | 'error';
 
 const Login: React.FC = observer(() => {
-  const [status] = useState<Status>('waiting');
-  const [error] = useState<string>('');
+  const [status, setStatus] = useState<Status>('waiting');
+  const [error, setError] = useState<string>('');
   const navigate = useNavigate();
   const [loginByToken, setLoginByToken] = useState<boolean>(false);
 
@@ -18,17 +18,31 @@ const Login: React.FC = observer(() => {
     const params = new URLSearchParams(window.location.search);
     const oneTimeToken = params.get('auth_token') || params.get('token');
     if (oneTimeToken) {
-      authStore.exchangeOneTimeTokenForJWT(oneTimeToken).then((success) => {
-        if (success) {
-          setLoginByToken(true);
-          // Убираем токен из URL
-          params.delete('auth_token');
-          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
-        }
-      });
+      setStatus('loading');
+      authStore
+        .exchangeOneTimeTokenForJWT(oneTimeToken)
+        .then((success) => {
+          if (success) {
+            setLoginByToken(true);
+            // Убираем токен из URL
+            params.delete('auth_token');
+            window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 1500);
+          } else {
+            setStatus('error');
+            setError(
+              'Срок действия ссылки истёк. Пожалуйста, получите новую ссылку через Telegram-бота.',
+            );
+          }
+        })
+        .catch(() => {
+          setStatus('error');
+          setError(
+            'Срок действия ссылки истёк. Пожалуйста, получите новую ссылку через Telegram-бота.',
+          );
+        });
     }
   }, []);
 
@@ -91,8 +105,36 @@ const Login: React.FC = observer(() => {
       case 'error':
         return (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                py: 2,
+                px: 2,
+                borderRadius: 2,
+                boxShadow: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                fontSize: 16,
+                backgroundColor: '#fff0f0',
+              }}
+              iconMapping={{
+                error: <CheckCircle sx={{ fontSize: 36, color: 'error.main', mb: 1 }} />,
+              }}
+            >
+              <Typography
+                variant="h6"
+                component="div"
+                color="error"
+                gutterBottom
+                sx={{ fontWeight: 600 }}
+              >
+                Ошибка авторизации
+              </Typography>
+              <Typography variant="body2" color="error" sx={{ fontSize: 16, fontWeight: 400 }}>
+                {error}
+              </Typography>
             </Alert>
             <Button variant="contained" onClick={handleTelegramLogin} size="large">
               Попробовать снова
