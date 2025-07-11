@@ -38,7 +38,7 @@ class TranscriptStore {
     try {
       const response = await startTranscribe(fileUrl, fileName);
       runInAction(() => {
-        this.currentTaskId = response.task_id || response.id;
+        this.currentTaskId = response.task_id;
         this.transcribeStatus = 'processing';
       });
       return this.currentTaskId;

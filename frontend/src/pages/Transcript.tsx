@@ -114,7 +114,7 @@ const Transcript: React.FC = observer(() => {
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
     setCurrentTab(newValue);
 
     // Load summary when switching to summary tab

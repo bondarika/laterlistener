@@ -80,7 +80,6 @@ const Dashboard: React.FC = observer(() => {
   // Calculate stats from real data
   const stats = {
     totalFiles: transcriptStore.transcripts.length,
-    totalDuration: transcriptStore.transcripts.length * 5, // Mock duration calculation
   };
 
   if (loginSuccess) {
@@ -137,7 +136,7 @@ const Dashboard: React.FC = observer(() => {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+          gridTemplateColumns: { xs: '1fr', md: '1fr' },
           gap: 3,
           mb: 4,
         }}
@@ -152,22 +151,6 @@ const Dashboard: React.FC = observer(() => {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Всего файлов
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <TrendingUp sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-              <Box>
-                <Typography variant="h4" component="div">
-                  {Math.round(stats.totalDuration)} мин
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Общая длительность
                 </Typography>
               </Box>
             </Box>
@@ -221,26 +204,20 @@ const Dashboard: React.FC = observer(() => {
                   <ListItemText
                     primary={
                       <Typography
+                        component="span"
                         variant="body1"
                         sx={{
                           cursor: 'pointer',
-                          '&:hover': { color: 'primary.main' },
+                          color: 'primary.main',
+                          textDecoration: 'underline',
+                          '&:hover': { color: 'secondary.main' },
                         }}
                         onClick={() => handleViewTranscription(transcript.id)}
                       >
-                        Транскрипция #{transcript.id}
+                        {`Транскрипция #${transcript.id}`}
                       </Typography>
                     }
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Создано: {formatDate(transcript.created_at)}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Обновлено: {formatDate(transcript.updated_at)}
-                        </Typography>
-                      </Box>
-                    }
+                    secondary={`Создано: ${formatDate(transcript.created_at)} | Обновлено: ${formatDate(transcript.updated_at)}`}
                   />
                 </ListItem>
               ))}
